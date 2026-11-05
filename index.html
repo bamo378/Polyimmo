@@ -3,193 +3,670 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PolyImmo — Installation solaire</title>
-<meta name="description" content="Production de l'installation photovoltaïque PolyImmo à Bulle (185,92 kWc).">
+<title>PolyImmo Solaire</title>
+<meta name="description" content="Tableau de bord de production de l'installation photovoltaïque PolyImmo à Bulle (185,92 kWc).">
+<meta name="theme-color" content="#0e1726">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='%23f2a900'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg:#f5f6f8; --card:#ffffff; --ink:#15223a; --muted:#5d6879; --line:#e2e6ed;
-    --accent:#e3a008; --accent-soft:#f6d77e; --navy:#1f3a5f; --navy-soft:#9db4d3;
+:root{
+  color-scheme: light;
+  --bg:#f3f4f1; --surface:#ffffff; --surface-2:#f7f8f5; --ink:#111827; --ink-2:#4b5563; --muted:#8a919c;
+  --line:#e6e8e3; --grid:#eef0eb;
+  --sun:#e89a00; --sun-2:#f7c548; --sun-soft:#fdf1d3;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --good:#16a34a;
+  --heat0:#eef0eb; --heat1:#fde7b0; --heat2:#f8c95a; --heat3:#eda100; --heat4:#c26f00; --heat5:#7c4400;
+  --shadow:0 1px 2px rgba(17,24,39,.04),0 8px 24px -12px rgba(17,24,39,.12);
+  --radius:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#0b111b; --surface:#121a27; --surface-2:#172131; --ink:#eef1f6; --ink-2:#b4bcc9; --muted:#7d8798;
+    --line:#223047; --grid:#1b2638;
+    --sun:#f2a900; --sun-2:#ffd36b; --sun-soft:#2c2412;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --heat0:#1b2638; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.6);
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){ --bg:#0f1622; --card:#172131; --ink:#eef2f8; --muted:#9aa6b8; --line:#26324a;
-      --navy:#8fb3e3; --navy-soft:#3b5378; --accent-soft:#7a5a12; }
-  }
-  :root[data-theme="dark"]{ --bg:#0f1622; --card:#172131; --ink:#eef2f8; --muted:#9aa6b8; --line:#26324a;
-      --navy:#8fb3e3; --navy-soft:#3b5378; --accent-soft:#7a5a12; }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif;line-height:1.5}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 16px}
-  header{padding:28px 0 4px}
-  .brand{display:flex;align-items:center;gap:14px}
-  .sun{flex:none;width:40px;height:40px;border-radius:50%;background:var(--accent);
-       box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent)}
-  h1{font-size:clamp(1.5rem,3.4vw,2.2rem);margin:0;letter-spacing:-.02em}
-  .sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:24px 0}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .kpi span{display:block;font-size:.8rem;color:var(--muted)}
-  .kpi strong{display:block;font-size:1.45rem;color:var(--navy);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-  .kpi em{font-style:normal;font-size:.8rem;color:var(--muted)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media (max-width:820px){.grid2{grid-template-columns:1fr}}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;min-width:0}
-  .panel h2{margin:0 0 2px;font-size:1.05rem}
-  .hint{margin:0 0 12px;color:var(--muted);font-size:.88rem}
-  .chart{position:relative;height:280px}
-  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.92rem}
-  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right}
-  th:first-child,td:first-child{text-align:left}
-  th{color:var(--muted);font-weight:600;font-size:.8rem}
-  .tablewrap{overflow-x:auto}
-  .tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ink)}
-  .embed{width:100%;min-height:620px;border:0;border-radius:10px;background:var(--bg)}
-  .placeholder{border:2px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;color:var(--muted);font-size:.92rem}
-  footer{color:var(--muted);font-size:.82rem;padding:8px 0 32px}
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0b111b; --surface:#121a27; --surface-2:#172131; --ink:#eef1f6; --ink-2:#b4bcc9; --muted:#7d8798;
+  --line:#223047; --grid:#1b2638;
+  --sun:#f2a900; --sun-2:#ffd36b; --sun-soft:#2c2412;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+  --heat0:#1b2638; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sans-serif;line-height:1.5;
+  -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;background:#0e1726;color:#f5f7fa;padding:22px 0 84px}
+.hero::before{content:"";position:absolute;inset:auto -10% -60% auto;width:720px;height:720px;border-radius:50%;
+  background:radial-gradient(circle,rgba(242,169,0,.55) 0%,rgba(242,169,0,.12) 40%,transparent 68%);pointer-events:none;
+  animation:glow 9s ease-in-out infinite alternate}
+@keyframes glow{from{transform:translate(0,0) scale(1)}to{transform:translate(-40px,20px) scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.hero::before{animation:none}}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:-.02em;color:#fff;text-decoration:none}
+.logo img{height:38px;width:auto;display:block}
+.logo .mark{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 200deg,#ffd36b,#f2a900,#e07b00,#ffd36b);
+  box-shadow:0 0 0 5px rgba(242,169,0,.18)}
+.logo small{font-weight:600;color:#9fb0c8;font-size:.8rem;margin-left:2px}
+.tools{display:flex;gap:8px;align-items:center}
+.iconbtn{appearance:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;
+  border-radius:12px;height:38px;padding:0 12px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;transition:background .2s}
+.iconbtn:hover{background:rgba(255,255,255,.14)}
+.iconbtn svg{width:16px;height:16px}
+.hero-body{position:relative;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:end;margin-top:40px}
+@media (max-width:860px){.hero-body{grid-template-columns:1fr}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:#ffd36b}
+.pulse{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 10px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.hero h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;letter-spacing:-.035em;margin:10px 0 10px;font-weight:800}
+.hero p.lead{color:#b9c6d8;margin:0;max-width:560px}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hs{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;backdrop-filter:blur(6px)}
+.hs span{display:block;font-size:.74rem;color:#9fb0c8}
+.hs strong{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
+.hs em{font-style:normal;font-size:.72rem;color:#8aa0bd}
+
+/* ---------- filter bar ---------- */
+.filters{position:relative;z-index:20;margin-top:-56px}
+@media (min-width:861px){.filters{position:sticky;top:0}}
+.fbar{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);
+  border-radius:16px;box-shadow:var(--shadow);padding:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:.84rem;font-weight:700;
+  padding:7px 11px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.range{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--ink-2)}
+.range input{font:inherit;font-size:.84rem;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:6px 8px}
+.flabel{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-left:4px}
+.spacer{flex:1}
+.chip{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-size:.84rem;font-weight:700;
+  padding:7px 12px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip:hover{border-color:var(--muted)}
+.chip svg{width:15px;height:15px}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none}
+.toggle input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background .2s;margin:0}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.toggle input:checked{background:var(--s1)}
+.toggle input:checked::after{transform:translateX(14px)}
+
+/* ---------- cards ---------- */
+main{padding:18px 0 40px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:6px 0 16px}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+  transition:transform .25s,opacity .3s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi .k{font-size:.78rem;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.kpi .k i{width:22px;height:22px;border-radius:7px;background:var(--sun-soft);display:grid;place-items:center;color:var(--sun)}
+.kpi .k i svg{width:13px;height:13px}
+.kpi .v{font-size:clamp(1.35rem,2.4vw,1.8rem);font-weight:800;letter-spacing:-.03em;margin-top:8px;line-height:1.1}
+.kpi .v small{font-size:.9rem;font-weight:700;color:var(--ink-2);margin-left:3px}
+.kpi .d{font-size:.76rem;color:var(--muted);margin-top:4px}
+.delta{font-weight:800}
+.delta.up{color:var(--good)} .delta.down{color:#dc2626}
+.grid{display:grid;gap:16px}
+.g-2{grid-template-columns:1.6fr 1fr}
+.g-2b{grid-template-columns:1fr 1fr}
+@media (max-width:960px){.g-2,.g-2b{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0;
+  transition:opacity .3s}
+.card.loading{opacity:.55}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card h2{font-size:1.02rem;margin:0;letter-spacing:-.01em}
+.card .sub{font-size:.8rem;color:var(--muted);margin:2px 0 0}
+.chart{position:relative;height:320px}
+.chart.sm{height:260px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--ink-2);font-weight:600}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend i.ln{height:3px;width:14px;border-radius:2px}
+.mini-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:2px;background:var(--surface-2);flex-wrap:wrap}
+.mini-seg button{appearance:none;border:0;background:transparent;font:inherit;font-size:.76rem;font-weight:700;color:var(--ink-2);padding:5px 9px;border-radius:8px;cursor:pointer}
+.mini-seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+/* heatmap */
+.heat-scroll{overflow-x:auto;padding-bottom:4px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,15px);gap:4px;width:max-content}
+.heat .c{width:15px;height:15px;border-radius:3px;background:var(--heat0);cursor:pointer;transition:transform .12s}
+.heat .c:hover,.heat .c:focus{transform:scale(1.35);outline:2px solid var(--surface);outline-offset:0}
+.heat .c.empty{background:transparent;cursor:default}
+.heat .c.na{background:repeating-linear-gradient(45deg,var(--grid) 0 2px,transparent 2px 4px)}
+.heat-months{display:grid;grid-auto-flow:column;grid-auto-columns:19px;font-size:.68rem;color:var(--muted);margin:0 0 4px 30px;width:max-content}
+.heat-wrap{display:flex;gap:6px}
+.heat-days{display:grid;grid-template-rows:repeat(7,15px);gap:4px;font-size:.66rem;color:var(--muted);width:24px;line-height:15px}
+.heat-legend{display:flex;align-items:center;gap:4px;font-size:.72rem;color:var(--muted);margin-top:10px}
+.heat-legend b{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* records */
+.records{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rec{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.rec span{font-size:.74rem;color:var(--muted);font-weight:700}
+.rec strong{display:block;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+.rec em{font-style:normal;font-size:.74rem;color:var(--ink-2)}
+.gauge{margin-top:14px}
+.gauge .bar{height:10px;border-radius:99px;background:var(--grid);overflow:hidden}
+.gauge .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun-2),var(--sun));width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.gauge .lbl{display:flex;justify-content:space-between;font-size:.76rem;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+
+/* table */
+.tablewrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{position:sticky;top:0;background:var(--surface-2);font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.hidden{display:none!important}
+
+/* tooltip (heatmap) */
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:10px;font-size:.78rem;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;white-space:nowrap}
+.tip.on{opacity:1;transform:none}
+.tip b{font-size:.92rem}
+
+.aurora .placeholder{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted);font-size:.9rem}
+.aurora iframe{width:100%;min-height:620px;border:0;border-radius:12px}
+footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 </style>
 </head>
 <body>
-<header class="wrap">
-  <div class="brand">
-    <div class="sun" aria-hidden="true"></div>
-    <div>
-      <h1>Installation solaire PolyImmo</h1>
-      <p class="sub">Ch. des Prairies 12, Bulle · 185,92 kWc · en service depuis juin 2023 · <span id="updated"></span></p>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="topbar">
+      <a class="logo" href="#" aria-label="PolyImmo">
+        <img src="assets/logo.png" alt="PolyImmo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'mark'}));document.getElementById('logoText').classList.remove('hidden')">
+        <span id="logoText" class="hidden">PolyImmo<small>Solaire</small></span>
+      </a>
+      <div class="tools">
+        <button class="iconbtn" id="themeBtn" type="button" aria-label="Changer de thème">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Thème</span>
+        </button>
+      </div>
+    </div>
+    <div class="hero-body">
+      <div>
+        <div class="eyebrow"><span class="pulse"></span><span id="updatedTxt">Données Aurora Vision</span></div>
+        <h1>Installation solaire<br>de Bulle</h1>
+        <p class="lead">185,92 kWc sur le toit du Ch. des Prairies 12 — deux onduleurs FIMER, en service depuis juin 2023. Suivez la production jour par jour, explorez l'historique et comparez les saisons.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hs"><span>Total produit</span><strong class="num" id="hTotal">–</strong><em>depuis 2023</em></div>
+        <div class="hs"><span>Cette année</span><strong class="num" id="hYear">–</strong><em id="hYearSub">&nbsp;</em></div>
+        <div class="hs"><span>Hier</span><strong class="num" id="hYday">–</strong><em id="hYdaySub">&nbsp;</em></div>
+      </div>
     </div>
   </div>
-</header>
+</section>
+
+<div class="filters">
+  <div class="wrap">
+    <div class="fbar" role="toolbar" aria-label="Filtres">
+      <span class="flabel">Période</span>
+      <div class="seg" id="presets">
+        <button data-p="7">7 j</button><button data-p="30" aria-pressed="true">30 j</button><button data-p="90">90 j</button>
+        <button data-p="365">12 mois</button><button data-p="ytd">Année</button><button data-p="all">Tout</button>
+      </div>
+      <div class="range">
+        <input type="date" id="dFrom" aria-label="Date de début"><span>→</span><input type="date" id="dTo" aria-label="Date de fin">
+      </div>
+      <span class="flabel">Pas</span>
+      <div class="seg" id="gran"><button data-g="day" aria-pressed="true">Jour</button><button data-g="week">Semaine</button><button data-g="month">Mois</button></div>
+      <span class="spacer"></span>
+      <label class="toggle"><input type="checkbox" id="cmp"> Comparer N-1</label>
+      <button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>CSV</button>
+    </div>
+  </div>
+</div>
 
 <main class="wrap">
-  <section class="kpis" id="kpis" aria-label="Indicateurs clés"></section>
+  <section class="kpis" id="kpis" aria-live="polite"></section>
 
-  <div class="grid2">
-    <section class="panel">
-      <h2>Production journalière</h2>
-      <p class="hint">60 derniers jours (kWh) — Aurora Vision</p>
-      <div class="chart"><canvas id="cDaily"></canvas></div>
+  <div class="grid g-2">
+    <section class="card reveal" id="mainCard">
+      <div class="card-h">
+        <div><h2 id="mainTitle">Production</h2><p class="sub" id="mainSub"></p></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="legend" id="mainLegend"></div>
+          <div class="mini-seg" id="mainMode"><button data-m="bars" aria-pressed="true">Barres</button><button data-m="cumul">Cumul</button><button data-m="table">Tableau</button></div>
+        </div>
+      </div>
+      <div class="chart" id="mainChartBox"><canvas id="cMain"></canvas></div>
+      <div class="tablewrap hidden" id="mainTable"></div>
     </section>
-    <section class="panel">
-      <h2>Production mensuelle</h2>
-      <p class="hint">Depuis le début du suivi en ligne (kWh) — Aurora Vision</p>
-      <div class="chart"><canvas id="cMonthly"></canvas></div>
+
+    <section class="card reveal">
+      <div class="card-h"><div><h2>Records & performance</h2><p class="sub">Sur la période sélectionnée</p></div></div>
+      <div class="records" id="records"></div>
+      <div class="gauge">
+        <div class="lbl"><span>Productible annualisé</span><span class="num" id="gaugeTxt">–</span></div>
+        <div class="bar"><i id="gaugeBar"></i></div>
+        <div class="lbl" style="margin-top:6px;color:var(--muted);font-weight:500"><span>0</span><span>Repère : 1 100 kWh/kWc</span></div>
+      </div>
     </section>
   </div>
 
-  <section class="panel">
-    <h2>Production par trimestre depuis la mise en service</h2>
-    <p class="hint">Relevés de compteur, complétés par Aurora Vision pour le trimestre en cours (kWh)</p>
-    <div class="chart"><canvas id="cQuarter"></canvas></div>
+  <section class="card reveal" style="margin-top:16px">
+    <div class="card-h">
+      <div><h2>Calendrier de production</h2><p class="sub">Chaque case = un jour · intensité = kWh produits · survolez pour le détail</p></div>
+    </div>
+    <div class="heat-scroll">
+      <div class="heat-months" id="heatMonths"></div>
+      <div class="heat-wrap">
+        <div class="heat-days"><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span><span>dim</span></div>
+        <div class="heat" id="heat"></div>
+      </div>
+    </div>
+    <div class="heat-legend"><span>moins</span><b style="background:var(--heat0)"></b><b style="background:var(--heat1)"></b><b style="background:var(--heat2)"></b><b style="background:var(--heat3)"></b><b style="background:var(--heat4)"></b><b style="background:var(--heat5)"></b><span>plus</span>
+      <span style="margin-left:12px"><b class="c na" style="background:repeating-linear-gradient(45deg,var(--grid) 0 2px,transparent 2px 4px)"></b> pas de données en ligne</span></div>
   </section>
 
-  <section class="panel">
-    <h2>Bilan annuel</h2>
-    <p class="hint">Production en kWh et productible (kWh par kWc installé)</p>
-    <div class="tablewrap"><table id="tYears"></table></div>
+  <div class="grid g-2b" style="margin-top:16px">
+    <section class="card reveal">
+      <div class="card-h">
+        <div><h2>Courbe de la journée</h2><p class="sub" id="hourSub">Production heure par heure (kWh)</p></div>
+        <div class="mini-seg" id="hourDays"></div>
+      </div>
+      <div class="legend" style="margin-bottom:8px"><span><i style="background:var(--sun)"></i>Jour sélectionné</span><span><i class="ln" style="background:var(--s1)"></i>Moyenne 7 jours</span></div>
+      <div class="chart sm"><canvas id="cHour"></canvas></div>
+    </section>
+    <section class="card reveal">
+      <div class="card-h">
+        <div><h2>Comparaison des années</h2><p class="sub">Production par trimestre (kWh) · relevés de compteur + Aurora</p></div>
+      </div>
+      <div class="legend" id="yearLegend" style="margin-bottom:8px"></div>
+      <div class="chart sm"><canvas id="cYears"></canvas></div>
+    </section>
+  </div>
+
+  <section class="card reveal" style="margin-top:16px">
+    <div class="card-h"><div><h2>Historique depuis la mise en service</h2><p class="sub">Production par trimestre (kWh) · le trimestre en cours est estimé à partir d'Aurora Vision</p></div></div>
+    <div class="chart sm"><canvas id="cQuarter"></canvas></div>
   </section>
 
-  <section class="panel">
-    <h2>Vue en direct Aurora Vision</h2>
-    <p class="hint">Affichage officiel de la plateforme, dès que le partage public sera activé.</p>
+  <section class="card reveal aurora" style="margin-top:16px">
+    <div class="card-h"><div><h2>Vue officielle Aurora Vision</h2><p class="sub">Affichage en direct de la plateforme FIMER, dès que le partage public est activé</p></div></div>
     <div id="aurora"></div>
   </section>
 </main>
 
-<footer class="wrap">Données : Aurora Vision / FIMER (journalier, depuis le 22.09.2025) et relevés de compteur trimestriels (depuis 2023).</footer>
+<footer class="wrap" id="foot"></footer>
+<div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-  /* URL publique Aurora Vision (Plant Viewer / KIOSK) — à coller quand le partage est actif */
-  const AURORA_PUBLIC_URL = "";
+/* URL publique Aurora Vision (Plant Viewer / KIOSK) — à coller quand le partage est actif */
+const AURORA_PUBLIC_URL = "";
 
-  const nf = new Intl.NumberFormat('fr-CH', {maximumFractionDigits: 0});
-  const nf1 = new Intl.NumberFormat('fr-CH', {maximumFractionDigits: 1});
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+const nf0 = new Intl.NumberFormat('fr-CH',{maximumFractionDigits:0});
+const nf1 = new Intl.NumberFormat('fr-CH',{minimumFractionDigits:1,maximumFractionDigits:1});
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const D = s => new Date(s + 'T12:00:00');
+const iso = d => d.toLocaleDateString('sv-SE');
+const addDays = (s,n) => { const d = D(s); d.setDate(d.getDate()+n); return iso(d); };
+const fmtDate = s => { const d = D(s); return d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear(); };
+const fmtE = kwh => kwh >= 10000 ? nf1.format(kwh/1000) + ' MWh' : nf0.format(kwh) + ' kWh';
 
-  fetch('data/production.json', {cache: 'no-store'}).then(r => r.json()).then(render).catch(() => {
-    document.getElementById('kpis').innerHTML = '<div class="kpi"><span>Données</span><strong>Indisponibles</strong></div>';
+let DATA, DAY = {}, FIRST, LAST, state = {from:null,to:null,preset:'30',gran:'day',cmp:false,mode:'bars',hourDay:null};
+const charts = {};
+
+/* ---------- theme ---------- */
+const themeBtn = document.getElementById('themeBtn');
+try { const t = localStorage.getItem('pi-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+themeBtn.onclick = () => {
+  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark'
+             : matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('pi-theme', document.documentElement.dataset.theme); } catch(e){}
+  renderAll(true);
+};
+
+/* ---------- data ---------- */
+fetch('data/production.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  DATA = d;
+  d.daily.forEach(([k,v]) => { if (k < d.updated) DAY[k] = v; });   // exclure le jour partiel
+  const keys = Object.keys(DAY).sort(); FIRST = keys[0]; LAST = keys[keys.length-1];
+  document.getElementById('dFrom').min = document.getElementById('dTo').min = FIRST;
+  document.getElementById('dFrom').max = document.getElementById('dTo').max = LAST;
+  applyPreset('30');
+  hero(); heatmap(); hourly(); years(); quarters(); aurora();
+  document.getElementById('updatedTxt').textContent = 'Mis à jour le ' + fmtDate(d.updated) + ' · Aurora Vision';
+  document.getElementById('foot').textContent = 'Sources : Aurora Vision / FIMER (production journalière depuis le ' + fmtDate(FIRST) +
+    ', horaire sur 7 jours) et relevés de compteur trimestriels depuis 2023. Équivalence ménage : 4 500 kWh/an (hypothèse).';
+  observe();
+}).catch(err => { document.getElementById('kpis').textContent = 'Données indisponibles.'; console.error(err); });
+
+/* ---------- quarters (meter + aurora) ---------- */
+function quarterMap(){
+  const q = {...DATA.meterQuarters}, live = new Set(), aq = {};
+  DATA.daily.forEach(([k,v]) => { const key = k.slice(0,4)+'-T'+(Math.floor((+k.slice(5,7)-1)/3)+1); aq[key]=(aq[key]||0)+v; });
+  Object.keys(aq).forEach(k => { if (!(k in q)) { q[k] = aq[k]; live.add(k); } });
+  return {q, live};
+}
+
+/* ---------- hero ---------- */
+function hero(){
+  const {q} = quarterMap();
+  const total = Object.values(q).reduce((a,b)=>a+b,0);
+  const yy = LAST.slice(0,4);
+  const year = Object.entries(q).filter(([k])=>k.startsWith(yy)).reduce((a,[,v])=>a+v,0);
+  countUp(document.getElementById('hTotal'), total/1000, v => nf1.format(v) + ' MWh');
+  countUp(document.getElementById('hYear'), year/1000, v => nf1.format(v) + ' MWh');
+  countUp(document.getElementById('hYday'), DAY[LAST], v => nf0.format(v) + ' kWh');
+  document.getElementById('hYearSub').textContent = yy + ' à ce jour';
+  document.getElementById('hYdaySub').textContent = fmtDate(LAST);
+}
+function countUp(el, target, fmt){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(target); return; }
+  const t0 = performance.now(), dur = 1100;
+  const step = t => { const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3); el.textContent = fmt(target*e); if (p<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ---------- filters ---------- */
+function applyPreset(p){
+  state.preset = p;
+  let from;
+  if (p === 'all') from = FIRST;
+  else if (p === 'ytd') from = LAST.slice(0,4) + '-01-01';
+  else from = addDays(LAST, -(+p) + 1);
+  if (from < FIRST) from = FIRST;
+  state.from = from; state.to = LAST;
+  if (p === '7' || p === '30') state.gran = 'day';
+  else if (p === '90' && state.gran === 'month') state.gran = 'week';
+  else if ((p === '365' || p === 'all' || p === 'ytd') && state.gran === 'day') state.gran = 'week';
+  syncControls(); renderAll();
+}
+function syncControls(){
+  document.querySelectorAll('#presets button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === state.preset));
+  document.querySelectorAll('#gran button').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === state.gran));
+  document.querySelectorAll('#mainMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === state.mode));
+  document.getElementById('dFrom').value = state.from; document.getElementById('dTo').value = state.to;
+  document.getElementById('cmp').checked = state.cmp;
+}
+document.getElementById('presets').onclick = e => { const b = e.target.closest('button'); if (b) applyPreset(b.dataset.p); };
+document.getElementById('gran').onclick = e => { const b = e.target.closest('button'); if (b) { state.gran = b.dataset.g; syncControls(); renderAll(); } };
+document.getElementById('mainMode').onclick = e => { const b = e.target.closest('button'); if (b) { state.mode = b.dataset.m; syncControls(); renderMain(); } };
+document.getElementById('cmp').onchange = e => { state.cmp = e.target.checked; renderAll(); };
+['dFrom','dTo'].forEach(id => document.getElementById(id).onchange = () => {
+  let f = document.getElementById('dFrom').value || FIRST, t = document.getElementById('dTo').value || LAST;
+  if (f > t) [f,t] = [t,f];
+  state.from = f < FIRST ? FIRST : f; state.to = t > LAST ? LAST : t; state.preset = null; syncControls(); renderAll();
+});
+document.getElementById('csvBtn').onclick = () => {
+  const rows = [['date','production_kwh']].concat(daysIn(state.from,state.to).map(k => [k, DAY[k]]));
+  const blob = new Blob([rows.map(r=>r.join(';')).join('\n')], {type:'text/csv'});
+  const a = Object.assign(document.createElement('a'), {href:URL.createObjectURL(blob), download:`polyimmo_production_${state.from}_${state.to}.csv`});
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+/* ---------- aggregation ---------- */
+function daysIn(f,t){ const out=[]; for (let k=f; k<=t; k=addDays(k,1)) if (k in DAY) out.push(k); return out; }
+function bucketKey(k,g){
+  if (g === 'day') return k;
+  if (g === 'month') return k.slice(0,7);
+  const d = D(k); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd); return iso(d);   // lundi
+}
+function bucketLabel(b,g){
+  if (g === 'day') { const d = D(b); return d.getDate()+' '+MOIS[d.getMonth()]; }
+  if (g === 'month') return MOIS[+b.slice(5,7)-1]+' '+b.slice(2,4);
+  const d = D(b); return 'sem. '+d.getDate()+' '+MOIS[d.getMonth()];
+}
+function aggregate(f,t,g){
+  const m = new Map();
+  daysIn(f,t).forEach(k => { const b = bucketKey(k,g); m.set(b,(m.get(b)||0)+DAY[k]); });
+  return [...m.entries()];
+}
+const prevYear = k => { const d = D(k); d.setFullYear(d.getFullYear()-1); return iso(d); };
+
+/* ---------- render ---------- */
+function renderAll(themeChange){
+  document.querySelectorAll('.card').forEach(c=>c.classList.add('loading'));
+  requestAnimationFrame(()=>{
+    renderKpis(); renderMain(); renderRecords();
+    if (themeChange) { heatmap(); hourly(); years(); quarters(); }
+    document.querySelectorAll('.card').forEach(c=>c.classList.remove('loading'));
   });
+}
 
-  function render(d) {
-    const kwp = d.plant.kwp;
-    const days = d.daily;                       // [["YYYY-MM-DD", kWh], ...]
-    const last = days[days.length - 1][0];
-    const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Zurich'});
-    const upd = new Date(d.updated + 'T12:00:00');
-    document.getElementById('updated').textContent = 'mis à jour le ' + upd.toLocaleDateString('fr-CH');
+function stats(f,t){
+  const ks = daysIn(f,t), vals = ks.map(k=>DAY[k]);
+  const total = vals.reduce((a,b)=>a+b,0);
+  let best = ks[0]; ks.forEach(k => { if (DAY[k] > DAY[best]) best = k; });
+  return {ks, total, n:ks.length, avg: ks.length ? total/ks.length : 0, best};
+}
 
-    // complete days only (exclude a partial "today" at time of extraction)
-    const full = days.filter(x => x[0] < d.updated);
-    const sum = arr => arr.reduce((a, x) => a + x[1], 0);
-    const lastFull = full[full.length - 1];
-    const ym = d.updated.slice(0, 7), yy = d.updated.slice(0, 4);
-    const monthNow = sum(days.filter(x => x[0].startsWith(ym)));
+function renderKpis(){
+  const s = stats(state.from, state.to), kwp = DATA.plant.kwp;
+  const len = s.n, pf = addDays(state.from,-len), pt = addDays(state.from,-1);
+  const p = stats(pf < FIRST ? FIRST : pf, pt);
+  const comparable = pf >= FIRST && p.n === len;
+  const delta = comparable && p.total ? (s.total/p.total - 1) : null;
+  const homes = s.n ? s.total / (4500 * s.n / 365) : 0;
+  const ic = {
+    bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+    avg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 17l6-6 4 4 8-8"/></svg>',
+    star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7 7 .6-5.3 4.6 1.6 7.1L12 17.8 5.7 21.3l1.6-7.1L2 9.6 9 9z"/></svg>',
+    panel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M3 11h18M9 5v12M15 5v12M12 17v3"/></svg>',
+    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 11l9-7 9 7v9H3z"/></svg>'
+  };
+  const items = [
+    ['bolt','Production', s.total, v => fmtE(v), delta === null ? 'du ' + fmtDate(state.from) + ' au ' + fmtDate(state.to)
+       : `<span class="delta ${delta>=0?'up':'down'}">${delta>=0?'▲':'▼'} ${nf1.format(Math.abs(delta*100))} %</span> vs période précédente`],
+    ['avg','Moyenne par jour', s.avg, v => nf0.format(v) + '<small>kWh</small>', s.n + ' jours'],
+    ['star','Meilleur jour', s.n ? DAY[s.best] : 0, v => nf0.format(v) + '<small>kWh</small>', s.n ? fmtDate(s.best) : '–'],
+    ['panel','Productible', s.total/kwp, v => nf1.format(v) + '<small>kWh/kWc</small>', 'sur la période · ' + nf1.format(kwp) + ' kWc'],
+    ['home','Équivalent ménages', homes, v => nf0.format(v), 'consommation couverte sur la période'],
+  ];
+  const box = document.getElementById('kpis');
+  box.innerHTML = items.map((it,i) => `<div class="kpi"><div class="k"><i>${ic[it[0]]}</i>${it[1]}</div><div class="v num" id="kv${i}">–</div><div class="d">${it[4]}</div></div>`).join('');
+  items.forEach((it,i) => { const el = document.getElementById('kv'+i); const t0 = performance.now();
+    const run = t => { const p = Math.min(1,(t-t0)/900), e = 1-Math.pow(1-p,3); el.innerHTML = it[3](it[2]*e); if (p<1) requestAnimationFrame(run); };
+    requestAnimationFrame(run); });
+}
 
-    // quarters: meter readings + Aurora where no meter value
-    const q = {...d.meterQuarters};
-    const aq = {};
-    days.forEach(([dt, v]) => { const k = dt.slice(0, 4) + '-T' + (Math.floor((+dt.slice(5, 7) - 1) / 3) + 1); aq[k] = (aq[k] || 0) + v; });
-    const live = new Set();
-    Object.keys(aq).forEach(k => { if (!(k in q)) { q[k] = aq[k]; live.add(k); } });
-    const qKeys = Object.keys(q).sort();
-    const years = {};
-    qKeys.forEach(k => { const y = k.slice(0, 4); years[y] = (years[y] || 0) + q[k]; });
-    const total = Object.values(years).reduce((a, b) => a + b, 0);
+function baseOpts(unit){
+  const grid = css('--grid'), muted = css('--muted');
+  return {
+    responsive:true, maintainAspectRatio:false, animation:{duration:650,easing:'easeOutCubic'},
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:css('--ink'),titleColor:css('--bg'),bodyColor:css('--bg'),padding:10,cornerRadius:10,displayColors:true,boxWidth:12,boxHeight:3,
+        titleFont:{weight:'700'},bodyFont:{weight:'600'},
+        callbacks:{label:c => ' ' + (c.parsed.y==null?'–':nf0.format(c.parsed.y)) + ' ' + unit + '  ' + (c.dataset.label||'')}}},
+    scales:{
+      x:{grid:{display:false},border:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true,autoSkipPadding:14,font:{size:11}}},
+      y:{grid:{color:grid},border:{display:false},beginAtZero:true,ticks:{color:muted,font:{size:11},callback:v=>nf0.format(v)}}
+    }
+  };
+}
+function makeChart(id, cfg){ if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); return charts[id]; }
 
-    // last 365 complete days
-    const l365 = sum(full.slice(-365));
-
-    const kpis = [
-      ['Production hier', nf1.format(lastFull[1]) + ' kWh', new Date(lastFull[0]).toLocaleDateString('fr-CH')],
-      ['Ce mois-ci', nf.format(monthNow) + ' kWh', MOIS[+ym.slice(5) - 1] + ' ' + yy],
-      ['Cette année', nf1.format(years[yy] / 1000) + ' MWh', 'depuis le 1er janvier ' + yy],
-      ['Total depuis 2023', nf1.format(total / 1000) + ' MWh', 'depuis la mise en service'],
-      ['Productible', nf.format(l365 / kwp) + ' kWh/kWc', '12 derniers mois'],
-    ];
-    document.getElementById('kpis').innerHTML = kpis.map(([a, b, c]) =>
-      `<div class="kpi"><span>${a}</span><strong>${b}</strong><em>${c}</em></div>`).join('');
-
-    Chart.defaults.font.family = 'Inter, Arial, sans-serif';
-    Chart.defaults.color = css('--muted');
-    const grid = {color: css('--line')};
-    const base = {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false},
-      tooltip: {callbacks: {label: c => nf.format(c.parsed.y) + ' kWh'}}},
-      scales: {x: {grid: {display: false}}, y: {grid, ticks: {callback: v => nf.format(v)}}}};
-
-    const d60 = full.slice(-60);
-    new Chart(document.getElementById('cDaily'), {type: 'bar', options: base, data: {
-      labels: d60.map(x => { const t = new Date(x[0]); return t.getDate() + ' ' + MOIS[t.getMonth()]; }),
-      datasets: [{data: d60.map(x => x[1]), backgroundColor: css('--accent'), borderRadius: 3}]}});
-
-    const mo = {};
-    days.forEach(([dt, v]) => { const k = dt.slice(0, 7); mo[k] = (mo[k] || 0) + v; });
-    const mk = Object.keys(mo).sort();
-    new Chart(document.getElementById('cMonthly'), {type: 'bar', options: base, data: {
-      labels: mk.map(k => MOIS[+k.slice(5) - 1] + ' ' + k.slice(2, 4)),
-      datasets: [{data: mk.map(k => Math.round(mo[k])),
-        backgroundColor: mk.map(k => k === ym ? css('--navy-soft') : css('--navy')), borderRadius: 3}]}});
-
-    new Chart(document.getElementById('cQuarter'), {type: 'bar', options: base, data: {
-      labels: qKeys.map(k => k.replace('-', ' ')),
-      datasets: [{data: qKeys.map(k => Math.round(q[k])),
-        backgroundColor: qKeys.map(k => live.has(k) ? css('--accent-soft') : css('--accent')), borderRadius: 3}]}});
-
-    const yk = Object.keys(years).sort();
-    document.getElementById('tYears').innerHTML =
-      '<thead><tr><th>Année</th><th>Production (kWh)</th><th>Productible (kWh/kWc)</th><th>Trimestres</th></tr></thead><tbody>' +
-      yk.map(y => {
-        const n = qKeys.filter(k => k.startsWith(y)).length;
-        const tag = y === yy ? 'en cours' : (n < 4 ? 'partiel' : '');
-        return `<tr><td>${y} ${tag ? '<span class="tag">' + tag + '</span>' : ''}</td>
-          <td>${nf.format(years[y])}</td><td>${nf.format(years[y] / kwp)}</td><td>${n}/4</td></tr>`;
-      }).join('') + `<tr><td><strong>Total</strong></td><td><strong>${nf.format(total)}</strong></td><td></td><td></td></tr></tbody>`;
-
-    const box = document.getElementById('aurora');
-    box.innerHTML = AURORA_PUBLIC_URL
-      ? `<iframe class="embed" src="${AURORA_PUBLIC_URL}" title="Aurora Vision PolyImmo" loading="lazy"></iframe>`
-      : '<div class="placeholder">Le partage public n\'est pas encore activé sur Aurora Vision.</div>';
+function renderMain(){
+  const g = state.gran, agg = aggregate(state.from, state.to, g);
+  const labels = agg.map(([b]) => bucketLabel(b,g));
+  let vals = agg.map(([,v]) => Math.round(v));
+  let prev = null;
+  if (state.cmp) {
+    prev = agg.map(([b]) => {
+      // somme N-1 des mêmes jours
+      let sum = 0, ok = false;
+      daysIn(state.from,state.to).filter(k => bucketKey(k,g) === b).forEach(k => { const pk = prevYear(k); if (pk in DAY) { sum += DAY[pk]; ok = true; } });
+      return ok ? Math.round(sum) : null;
+    });
   }
+  const gLabel = {day:'par jour',week:'par semaine',month:'par mois'}[g];
+  document.getElementById('mainTitle').textContent = state.mode === 'cumul' ? 'Production cumulée' : 'Production ' + gLabel;
+  document.getElementById('mainSub').textContent = fmtDate(state.from) + ' – ' + fmtDate(state.to) + ' · kWh';
+  const lg = document.getElementById('mainLegend');
+  lg.innerHTML = state.cmp ? `<span><i style="background:var(--sun)"></i>Période</span><span><i class="ln" style="background:var(--s1)"></i>Année précédente</span>` : '';
+  if (state.cmp && prev && prev.every(v => v == null)) lg.innerHTML += '<span style="color:var(--muted)">pas de données N-1 sur cette période</span>';
+
+  const tableEl = document.getElementById('mainTable'), box = document.getElementById('mainChartBox');
+  if (state.mode === 'table') {
+    box.classList.add('hidden'); tableEl.classList.remove('hidden');
+    const t = document.createElement('table');
+    t.innerHTML = `<thead><tr><th>Période</th><th>Production (kWh)</th>${state.cmp?'<th>N-1 (kWh)</th><th>Écart</th>':''}</tr></thead>`;
+    const tb = document.createElement('tbody');
+    agg.forEach(([b,v],i) => { const tr = document.createElement('tr');
+      const cells = [bucketLabel(b,g), nf0.format(v)];
+      if (state.cmp) { const p = prev[i]; cells.push(p==null?'–':nf0.format(p), p? (v/p-1>=0?'+':'') + nf1.format((v/p-1)*100)+' %':'–'); }
+      cells.forEach(c => { const td = document.createElement('td'); td.textContent = c; td.className='num'; tr.appendChild(td); }); tb.appendChild(tr); });
+    t.appendChild(tb); tableEl.replaceChildren(t); return;
+  }
+  box.classList.remove('hidden'); tableEl.classList.add('hidden');
+
+  const sun = css('--sun'), s1 = css('--s1');
+  if (state.mode === 'cumul') {
+    let c = 0; const cum = vals.map(v => (c += v));
+    let cp = 0; const cumP = prev ? prev.map(v => v==null?null:(cp += v)) : null;
+    const ctx = document.getElementById('cMain').getContext('2d');
+    const grad = ctx.createLinearGradient(0,0,0,320); grad.addColorStop(0, sun + '55'); grad.addColorStop(1, sun + '00');
+    const ds = [{label:'Période',data:cum,borderColor:sun,backgroundColor:grad,fill:true,tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}];
+    if (cumP) ds.push({label:'Année précédente',data:cumP,borderColor:s1,borderWidth:2,pointRadius:0,pointHoverRadius:5,tension:.3,borderDash:[5,4],spanGaps:false});
+    makeChart('cMain',{type:'line',data:{labels,datasets:ds},options:baseOpts('kWh')});
+    return;
+  }
+  const ds = [{label:'Période',type:'bar',data:vals,backgroundColor:sun,hoverBackgroundColor:css('--sun-2'),borderRadius:{topLeft:4,topRight:4},borderSkipped:'bottom',
+    maxBarThickness:42,categoryPercentage:.86,barPercentage:.92,order:2}];
+  if (prev) ds.push({label:'Année précédente',type:'line',data:prev,borderColor:s1,backgroundColor:s1,borderWidth:2,pointRadius:vals.length>45?0:3,pointHoverRadius:5,tension:.3,order:1,spanGaps:false});
+  makeChart('cMain',{type:'bar',data:{labels,datasets:ds},options:baseOpts('kWh')});
+}
+
+function renderRecords(){
+  const ks = daysIn(state.from,state.to);
+  const byMonth = aggregate(state.from,state.to,'month'), byWeek = aggregate(state.from,state.to,'week');
+  const top = arr => arr.reduce((a,b) => b[1] > a[1] ? b : a, arr[0] || ['',0]);
+  const bm = top(byMonth), bw = top(byWeek);
+  let worst = ks[0]; ks.forEach(k => { if (DAY[k] < DAY[worst]) worst = k; });
+  const sunny = ks.filter(k => DAY[k] >= 0.6 * Math.max(...ks.map(x=>DAY[x]))).length;
+  const recs = [
+    ['Meilleure semaine', fmtE(bw[1]), bw[0] ? 'semaine du ' + fmtDate(bw[0]) : '–'],
+    ['Meilleur mois', fmtE(bm[1]), bm[0] ? MOIS[+bm[0].slice(5,7)-1] + ' ' + bm[0].slice(0,4) : '–'],
+    ['Jour le plus faible', ks.length ? nf0.format(DAY[worst]) + ' kWh' : '–', ks.length ? fmtDate(worst) : ''],
+    ['Jours très productifs', sunny + ' / ' + ks.length, '≥ 60 % du meilleur jour'],
+  ];
+  const box = document.getElementById('records'); box.replaceChildren();
+  recs.forEach(([a,b,c]) => { const d = document.createElement('div'); d.className='rec';
+    const s=document.createElement('span'); s.textContent=a; const st=document.createElement('strong'); st.className='num'; st.textContent=b; const e=document.createElement('em'); e.textContent=c;
+    d.append(s,st,e); box.appendChild(d); });
+  const s = stats(state.from,state.to), ann = s.n ? s.total/DATA.plant.kwp*365/s.n : 0;
+  document.getElementById('gaugeTxt').textContent = nf0.format(ann) + ' kWh/kWc·an';
+  requestAnimationFrame(() => document.getElementById('gaugeBar').style.width = Math.min(100, ann/1100*100) + '%');
+}
+
+/* ---------- heatmap ---------- */
+function heatmap(){
+  const end = LAST, start0 = addDays(end, -364);
+  const sd = D(start0); const wd = (sd.getDay()+6)%7; const start = addDays(start0, -wd);
+  const vals = Object.values(DAY), max = Math.max(...vals);
+  const level = v => v == null ? -1 : v <= 0.5 ? 0 : Math.min(5, 1 + Math.floor(v / max * 5 * 0.999));
+  const heat = document.getElementById('heat'), months = document.getElementById('heatMonths');
+  heat.replaceChildren(); months.replaceChildren();
+  const tip = document.getElementById('tip');
+  let col = 0, lastMonth = -1;
+  for (let k = start; k <= end; k = addDays(k,1)) {
+    const d = D(k), dow = (d.getDay()+6)%7;
+    if (dow === 0) {
+      const lab = document.createElement('span');
+      if (d.getMonth() !== lastMonth) { lab.textContent = MOIS[d.getMonth()]; lastMonth = d.getMonth(); }
+      months.appendChild(lab); col++;
+    }
+    const c = document.createElement('div'); c.className = 'c';
+    if (k < start0) c.classList.add('empty');
+    else {
+      const v = DAY[k]; const L = level(v);
+      if (L < 0) c.classList.add('na'); else c.style.background = `var(--heat${L})`;
+      c.tabIndex = 0;
+      const show = e => { tip.replaceChildren(); const b = document.createElement('b'); b.textContent = v == null ? 'Pas de données' : nf0.format(v) + ' kWh';
+        tip.append(b, document.createElement('br'), document.createTextNode(JOURS[d.getDay()] + ' ' + fmtDate(k)));
+        const r = c.getBoundingClientRect(); tip.style.left = Math.min(innerWidth - 170, Math.max(8, r.left - 60)) + 'px'; tip.style.top = (r.top - 54) + 'px'; tip.classList.add('on'); };
+      c.addEventListener('pointerenter', show); c.addEventListener('focus', show);
+      c.addEventListener('pointerleave', () => tip.classList.remove('on')); c.addEventListener('blur', () => tip.classList.remove('on'));
+      c.addEventListener('click', () => { state.from = k; state.to = k > LAST ? LAST : k; state.preset = null; state.gran='day';
+        state.from = addDays(k,-6) < FIRST ? FIRST : addDays(k,-6); state.to = addDays(k,7) > LAST ? LAST : addDays(k,7); syncControls(); renderAll();
+        document.getElementById('mainCard').scrollIntoView({behavior:'smooth',block:'center'}); });
+    }
+    heat.appendChild(c);
+  }
+  const sc = document.querySelector('.heat-scroll'); sc.scrollLeft = sc.scrollWidth;
+}
+
+/* ---------- hourly ---------- */
+function hourly(){
+  const h = DATA.hourly; if (!h) return;
+  const days = []; for (let i=0;i<h.values.length/24;i++) days.push(addDays(h.start,i));
+  if (!state.hourDay) state.hourDay = days[days.length-1];
+  const box = document.getElementById('hourDays'); box.replaceChildren();
+  days.forEach(k => { const b = document.createElement('button'); const d = D(k); b.textContent = JOURS[d.getDay()] + ' ' + d.getDate();
+    b.setAttribute('aria-pressed', k === state.hourDay); b.onclick = () => { state.hourDay = k; hourly(); }; box.appendChild(b); });
+  const idx = days.indexOf(state.hourDay), sel = h.values.slice(idx*24, idx*24+24);
+  const avg = [...Array(24)].map((_,i) => days.reduce((a,_,j) => a + h.values[j*24+i], 0) / days.length);
+  const total = sel.reduce((a,b)=>a+b,0), peak = sel.indexOf(Math.max(...sel));
+  document.getElementById('hourSub').textContent = fmtDate(state.hourDay) + ' · ' + nf0.format(total) + ' kWh · pic vers ' + peak + 'h';
+  const labels = [...Array(24)].map((_,i) => i + 'h');
+  const o = baseOpts('kWh');
+  makeChart('cHour',{type:'bar',data:{labels,datasets:[
+    {label:'Jour',data:sel,backgroundColor:css('--sun'),borderRadius:{topLeft:4,topRight:4},borderSkipped:'bottom',order:2,categoryPercentage:.9,barPercentage:.9},
+    {label:'Moyenne 7 j',type:'line',data:avg.map(v=>Math.round(v*10)/10),borderColor:css('--s1'),borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.35,order:1}
+  ]},options:o});
+}
+
+/* ---------- years (quarters grouped by year) ---------- */
+function years(){
+  const {q, live} = quarterMap();
+  const ys = [...new Set(Object.keys(q).map(k=>k.slice(0,4)))].sort();
+  const cols = ['--s1','--s2','--s3','--s4'].map(css);
+  const lg = document.getElementById('yearLegend'); lg.replaceChildren();
+  const ds = ys.map((y,i) => {
+    const sp = document.createElement('span'); const ii = document.createElement('i'); ii.style.background = cols[i % 4];
+    sp.append(ii, document.createTextNode(y + (Object.keys(q).some(k=>k.startsWith(y)&&live.has(k)) ? ' (en cours)' : ''))); lg.appendChild(sp);
+    return {label:y, data:['T1','T2','T3','T4'].map(t => q[y+'-'+t] != null ? Math.round(q[y+'-'+t]) : null),
+      backgroundColor:cols[i % 4], borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', categoryPercentage:.8, barPercentage:.9};
+  });
+  makeChart('cYears',{type:'bar',data:{labels:['T1 · hiver','T2 · printemps','T3 · été','T4 · automne'],datasets:ds},options:baseOpts('kWh')});
+}
+
+/* ---------- quarter history ---------- */
+function quarters(){
+  const {q, live} = quarterMap(); const ks = Object.keys(q).sort();
+  const sun = css('--sun'), soft = css('--sun-2');
+  const o = baseOpts('kWh');
+  makeChart('cQuarter',{type:'bar',data:{labels:ks.map(k=>k.replace('-',' ')),datasets:[{label:'',data:ks.map(k=>Math.round(q[k])),
+    backgroundColor:ks.map(k => live.has(k) ? soft : sun), borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', maxBarThickness:48}]},options:o});
+}
+
+function aurora(){
+  const box = document.getElementById('aurora');
+  if (AURORA_PUBLIC_URL) { const f = document.createElement('iframe'); f.src = AURORA_PUBLIC_URL; f.title = 'Aurora Vision PolyImmo'; f.loading = 'lazy'; box.replaceChildren(f); }
+  else { const p = document.createElement('div'); p.className = 'placeholder'; p.textContent = 'Le partage public n\'est pas encore activé sur Aurora Vision. Les données ci-dessus proviennent de la plateforme et sont mises à jour sur demande.'; box.replaceChildren(p); }
+}
+
+function observe(){
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+}
 </script>
 </body>
 </html>
