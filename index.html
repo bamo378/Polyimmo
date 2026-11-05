@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PolyImmo — Installation solaire</title>
+<meta name="description" content="Production en direct de l'installation photovoltaïque PolyImmo à Bulle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#16233a; --muted:#5b6678; --line:#e3e7ee;
+    --accent:#e3a008; --navy:#1f3a5f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1622; --card:#172131; --ink:#eef2f8; --muted:#9aa6b8; --line:#26324a; --navy:#9fc1ea; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  header{padding:28px 0 8px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .sun{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--accent) 0 45%,transparent 46%);
+       box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}
+  h1{font-size:clamp(1.6rem,3.5vw,2.3rem);margin:0;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:6px 0 0}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:24px 0}
+  .fact{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .fact span{display:block;font-size:.8rem;color:var(--muted)}
+  .fact strong{font-size:1.15rem;color:var(--navy)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:28px}
+  .panel h2{margin:0 0 4px;font-size:1.15rem}
+  .panel p.hint{margin:0 0 14px;color:var(--muted);font-size:.92rem}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;color:#15803d;margin-left:8px}
+  .live::before{content:"";width:8px;height:8px;border-radius:50%;background:#16a34a}
+  .embed{width:100%;min-height:620px;border:0;border-radius:10px;background:var(--bg)}
+  .embed-box{width:100%;overflow:hidden;border-radius:10px}
+  .placeholder{border:2px dashed var(--line);border-radius:10px;padding:48px 20px;text-align:center;color:var(--muted)}
+  .placeholder strong{color:var(--ink);display:block;margin-bottom:6px;font-size:1.05rem}
+  .open{display:inline-block;margin-top:12px;color:var(--navy);font-weight:600;text-decoration:none}
+  footer{color:var(--muted);font-size:.85rem;padding:8px 0 32px}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="brand">
+    <div class="sun" aria-hidden="true"></div>
+    <div>
+      <h1>Installation solaire PolyImmo</h1>
+      <p class="sub">Bulle (FR) · Production photovoltaïque suivie en direct</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="facts" aria-label="Informations clés">
+    <div class="fact"><span>Mise en service</span><strong>Avril 2023</strong></div>
+    <div class="fact"><span>Lieu</span><strong>Bulle, Fribourg</strong></div>
+    <div class="fact"><span>Installateur</span><strong>Romande Energie</strong></div>
+    <div class="fact"><span>Suivi</span><strong>Aurora Vision (FIMER)</strong></div>
+  </section>
+
+  <section class="panel">
+    <h2>Production en direct <span class="live" id="liveBadge" hidden>En direct</span></h2>
+    <p class="hint">Données affichées directement depuis la plateforme Aurora Vision : production du jour, historique et énergie totale.</p>
+    <div id="aurora"></div>
+  </section>
+</main>
+
+<footer class="wrap">PolyImmo · Données de production fournies par Aurora Vision / FIMER.</footer>
+
+<script>
+  /* =====================================================================
+     RÉGLAGE AURORA VISION — à remplir une fois le partage activé
+     Coller ci-dessous l'« URL publique » (Plant Viewer > Published View).
+     Exemple : const AURORA_PUBLIC_URL = "https://www.auroravision.net/...";
+     ===================================================================== */
+  const AURORA_PUBLIC_URL = "";
+
+  const box = document.getElementById('aurora');
+  if (AURORA_PUBLIC_URL) {
+    box.innerHTML =
+      '<div class="embed-box"><iframe class="embed" src="' + AURORA_PUBLIC_URL +
+      '" title="Production Aurora Vision PolyImmo" loading="lazy"></iframe></div>' +
+      '<a class="open" href="' + AURORA_PUBLIC_URL + '" target="_blank" rel="noopener">Ouvrir dans Aurora Vision ↗</a>';
+    document.getElementById('liveBadge').hidden = false;
+  } else {
+    box.innerHTML =
+      '<div class="placeholder"><strong>Affichage en cours d\'activation</strong>' +
+      'Le partage public de l\'installation doit être activé sur Aurora Vision (Plant Viewer).<br>' +
+      'Dès que le lien est disponible, la production s\'affichera ici automatiquement.</div>';
+  }
+</script>
+</body>
+</html>
