@@ -34,6 +34,9 @@ ou remplacer le fichier.
 
 - **Tableau de bord** : production, onduleurs, calendrier, puissance, météo, événements, historique.
 - **Finances** : revenus, amortissement, projection, prix de reprise par trimestre (calculés à partir des saisies).
+- **Prix marché** : prix spot day-ahead (Suisse, Allemagne, France) au quart d'heure, mis à jour chaque jour par
+  GitHub Actions (`scripts/fetch_prices.py` → `data/prices_*.json`, taux BCE `data/fx_eurchf.json`), et simulation de vente
+  de la production 15 min (`data/power15.v64`) au prix du marché comparée au GRD.
 - **Saisie** : factures GRD, versements banque, autres revenus, charges → `data/entries.json`.
   Pour enregistrer depuis le site : *Connexion GitHub* avec une clé « fine-grained » limitée au dépôt Polyimmo
   (permission *Contents : Read and write*). Sans clé, les saisies restent dans le navigateur.

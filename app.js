@@ -388,7 +388,7 @@ function renderWeather(){
 }
 
 /* ---------- navigation ---------- */
-const VIEWS = ['home','prod','fin','saisie','controles','rapports'];
+const VIEWS = ['home','prod','fin','prix','saisie','controles','rapports'];
 function setView(v, initial){
   if (v === 'dash') v = 'home'; if (!VIEWS.includes(v)) v = 'home';
   S.view = v;
@@ -407,6 +407,7 @@ function renderView(){
   if (v === 'fin' && PI.finRender) PI.finRender();
   if (v === 'saisie' && PI.renderSaisie) PI.renderSaisie();
   if (v === 'rapports' && PI.renderReportUI) PI.renderReportUI();
+  if (v === 'prix' && PI.renderPrix) PI.renderPrix();
 }
 PI.setView = setView; PI.renderAll = renderView;
 document.addEventListener('pi:fin', () => { if (S.view === 'home') renderHome(); });

@@ -252,6 +252,9 @@ details.adv > summary small{font-weight:500;color:var(--muted)}
 tr.proj td{color:var(--ink-2)}
 tr.cur td{background:color-mix(in srgb,var(--sun) 8%,transparent)}
 td.neg{color:var(--bad)} td.pos{color:var(--good)}
+.feectl{display:inline-flex;align-items:center;gap:10px;font-size:.84rem;font-weight:600;color:var(--ink-2)}.feectl input{width:150px;accent-color:var(--brand)}
+#prix .card{transition:opacity .2s}
+@media (max-width:1000px){#pxKpis,#simKpis{grid-template-columns:1fr 1fr;gap:10px}}@media (max-width:560px){#pxKpis .v,#simKpis .v{font-size:1.15rem!important}#pxKpis .kpi,#simKpis .kpi{padding:12px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 footer{color:var(--muted);font-size:.78rem;padding:4px 0 36px}
@@ -364,9 +367,10 @@ body.noscroll{overflow:hidden}
       <button data-v="home" aria-current="page">Accueil</button>
       <button data-v="prod">Production</button>
       <button data-v="fin">Finances</button>
+      <button data-v="prix">Prix marché</button>
       <button data-v="saisie">Saisie</button>
       <button data-v="controles">Contrôles <span class="tbadge-n hidden" id="tabBadge">0</span></button>
-      <button data-v="rapports">Rapports PDF</button>
+      <button data-v="rapports">Rapports</button>
     </nav>
     <div class="top-r">
       <span class="upd" id="updTop"></span>
@@ -528,6 +532,60 @@ body.noscroll{overflow:hidden}
   </details>
 </section>
 
+<!-- ================= PRIX DU MARCHÉ ================= -->
+<section data-view="prix" id="prix" class="hidden">
+  <div class="page-h">
+    <div><h1>Prix du marché de l'électricité</h1><p>Prix spot day-ahead au quart d'heure en Suisse et en Europe, et ce que votre installation aurait gagné en vendant directement au marché.</p></div>
+    <div class="chips" id="pxZone"><button data-r="CH" aria-pressed="true">Suisse</button><button data-r="DE-LU">Allemagne (Europe)</button><button data-r="FR">France</button></div>
+  </div>
+  <div class="grid g3" id="pxKpis" style="margin-bottom:16px"></div>
+  <section class="card">
+    <div class="card-h">
+      <div><h2>Évolution du prix</h2><p class="sub" id="pxNote"></p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="chips" id="pxRange"><button data-r="today" aria-pressed="true">Aujourd'hui</button><button data-r="tomorrow" id="pxTomorrow">Demain</button><button data-r="7">7 j</button><button data-r="30">30 j</button><button data-r="12m">12 mois</button></div>
+        <div class="chips" id="pxUnit"><button data-r="ct" aria-pressed="true">ct/kWh CHF</button><button data-r="eur">€/MWh</button></div>
+      </div>
+    </div>
+    <div class="chart"><canvas id="cPx"></canvas></div>
+    <div id="pxPowWrap" class="hidden" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
+      <h3 id="pxPowTitle" style="font-size:.95rem;margin:0 0 10px"></h3>
+      <div class="chart" style="height:200px"><canvas id="cPxPow"></canvas></div>
+      <p class="note" id="pxPowNote"></p>
+    </div>
+    <p class="note" id="pxUpd"></p>
+  </section>
+
+  <div class="page-h" style="margin-top:34px">
+    <div><h1 style="font-size:1.45rem">Simulation : et si j'avais vendu au prix du marché ?</h1><p>Chaque quart d'heure de votre production réelle (Aurora Vision) est valorisé au prix du marché du même quart d'heure, puis comparé à ce que le GRD vous a réellement payé.</p></div>
+  </div>
+  <section class="card">
+    <div class="card-h">
+      <div><h2>Réglages</h2><p class="sub">Choisissez la période et le marché ; tout se recalcule instantanément.</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="chips" id="simRange"></div>
+        <div class="chips" id="simZone"><button data-r="CH" aria-pressed="true">Suisse</button><button data-r="DE-LU">Allemagne</button><button data-r="FR">France</button></div>
+      </div>
+    </div>
+    <div class="ctl" style="display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center">
+      <label class="toggle"><input type="checkbox" id="simHt" checked> Comparer hors TVA <span class="help" tabindex="0" data-tip="Les prix du marché sont hors TVA. Vos factures GRD sont TTC (TVA 8,1 %) : activé, on retire la TVA du GRD pour comparer à égalité.">?</span></label>
+      <label class="toggle"><input type="checkbox" id="simNeg"> Couper l'injection quand le prix est négatif <span class="help" tabindex="0" data-tip="Si l'installation s'arrête dès que le prix passe sous zéro, ces kWh ne sont ni vendus ni payés.">?</span></label>
+      <label class="feectl">Frais d'agrégateur <input type="range" id="simFee" min="0" max="3" step="0.1" value="0"> <b id="simFeeV" class="num">0,00 ct/kWh</b> <span class="help" tabindex="0" data-tip="Pour vendre au marché, il faut passer par un agrégateur/négociant qui prend une commission (souvent 0,5 à 1,5 ct/kWh).">?</span></label>
+    </div>
+    <p id="simLead" style="font-size:1.02rem;line-height:1.55;margin:16px 0 0;padding:14px 16px;border-radius:12px;background:var(--surface-2)"></p>
+  </section>
+  <div class="grid g3 mt" id="simKpis"></div>
+  <div class="grid g2 mt">
+    <section class="card"><div class="card-h"><div><h2>Revenus par mois</h2><p class="sub">CHF · marché vs GRD, mêmes kWh</p></div></div><div class="chart"><canvas id="cSim"></canvas></div></section>
+    <section class="card"><div class="card-h"><div><h2>Prix obtenu par mois</h2><p class="sub">ct/kWh · moyenne pondérée par votre production</p></div></div><div class="chart"><canvas id="cSimP"></canvas></div></section>
+  </div>
+  <section class="card mt">
+    <div class="card-h"><div><h2>Détail mois par mois</h2></div></div>
+    <div class="tablewrap" style="max-height:none"><table id="simTable"></table></div>
+    <p class="note" id="simMethod"></p>
+  </section>
+</section>
+
   <!-- ================= SAISIE ================= -->
   <section data-view="saisie" class="view hidden" id="saisie">
     <div class="view-head">
@@ -680,5 +738,6 @@ body.noscroll{overflow:hidden}
 <script src="finance.js?v=7"></script>
 <script src="checks.js?v=7"></script>
 <script src="report.js?v=7"></script>
+<script src="prix.js?v=8"></script>
 </body>
 </html>
