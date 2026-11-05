@@ -5,7 +5,7 @@
 /* URL publique Aurora Vision (Plant Viewer / KIOSK) — à coller quand le partage est actif */
 const AURORA_PUBLIC_URL = "";
 
-const PI = window.PI = {};
+const PI = window.PI = window.PI || {};
 const MOIS = PI.MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 const JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
 const nf0 = PI.nf0 = new Intl.NumberFormat('fr-CH',{maximumFractionDigits:0});
@@ -21,7 +21,7 @@ const qOf = PI.qOf = k => k.slice(0,4) + '-T' + (Math.floor((+k.slice(5,7)-1)/3)
 const el = id => document.getElementById(id);
 
 let DATA, PLANT = {}, INV = {}, DAY = {}, FIRST, LAST;
-const state = PI.state = {from:null,to:null,preset:'30',gran:'day',cmp:false,exp:false,ma:false,mode:'bars',inv:'all',hourDay:null,pwDay:null,invView:'month'};
+const state = PI.state = {view:'dash',from:null,to:null,preset:'30',gran:'day',cmp:false,exp:false,ma:false,mode:'bars',inv:'all',hourDay:null,pwDay:null,invView:'month'};
 const charts = PI.charts = {};
 
 /* ---------- utils ---------- */
@@ -63,10 +63,12 @@ el('themeBtn').onclick = () => {
 };
 
 /* ---------- load ---------- */
-fetch('data/production.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+Promise.all([fetch('data/production.json',{cache:'no-store'}).then(r=>r.json()), PI.store ? PI.store.load().catch(e => { console.warn(e); return []; }) : []]).then(([d])=>{
   DATA = PI.DATA = d;
+  applyEntries();
   d.daily.forEach(([k,v]) => { if (k < d.updated) PLANT[k] = v; });             // jour partiel exclu
   (d.inverters||[]).forEach(inv => { const m = {}; inv.daily.forEach((v,i) => { const k = addDays(inv.start,i); if (k < d.updated && v != null) m[k] = v; }); INV[inv.id] = m; });
+  PI.PLANT = PLANT; PI.INV = INV;
   const keys = Object.keys(PLANT).sort(); FIRST = PI.FIRST = keys[0]; LAST = PI.LAST = keys[keys.length-1];
   ['dFrom','dTo'].forEach(id => { el(id).min = FIRST; el(id).max = LAST; });
   readHash();
@@ -80,7 +82,40 @@ fetch('data/production.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
     'Équivalence ménage : 4 500 kWh/an (hypothèse). « Attendu » : moyenne des 2 dernières années complètes, répartie selon le profil mensuel observé.';
   observe();
   document.dispatchEvent(new CustomEvent('pi:data'));
+  setView(state.view, true);
 }).catch(err => { el('kpis').textContent = 'Données indisponibles.'; console.error(err); });
+
+/* ---------- saisies → données de compteur ---------- */
+function applyEntries(){
+  if (!PI.derive || !PI.store || !PI.store.entries.length) return;
+  const r = PI.derive(); DATA.meterQuarters = r.meterQuarters; PI.ENTRY = r;
+}
+PI.onEntriesChanged = function(){
+  if (!DATA) return; applyEntries(); EXP = null; PI._dayMap = null;
+  hero(); years(); quarters();
+  if (state.view === 'dash') renderAll();
+  if (PI.finRender) PI.finRender();
+  if (PI.renderChecks) PI.renderChecks();
+};
+
+/* ---------- onglets ---------- */
+function setView(v, initial){
+  if (!['dash','fin','saisie','controles','rapports'].includes(v)) v = 'dash';
+  state.view = v;
+  document.querySelectorAll('[data-view]').forEach(x => x.classList.toggle('hidden', !x.dataset.view.split(' ').includes(v)));
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v ? 'page' : 'false'));
+  document.body.dataset.page = v;
+  if (v === 'dash') { if (!initial) renderAll(); requestAnimationFrame(() => Object.values(charts).forEach(c => c.resize())); }
+  if (v === 'fin' && PI.finRender) PI.finRender();
+  if (v === 'saisie' && PI.renderSaisie) PI.renderSaisie();
+  if (v === 'controles' && PI.renderChecks) PI.renderChecks();
+  if (v === 'rapports' && PI.renderReportUI) PI.renderReportUI();
+  if (PI.renderChecks && v !== 'controles') PI.renderChecks();
+  document.querySelectorAll('.reveal').forEach(e => e.classList.add('in'));
+  if (!initial) { writeHash(); window.scrollTo({top:0, behavior:'smooth'}); }
+}
+PI.setView = setView;
+document.getElementById('tabs').onclick = e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); };
 
 function setSeries(){ DAY = state.inv === 'all' ? PLANT : (INV[state.inv] || PLANT); }
 
@@ -147,6 +182,7 @@ function hero(){
 /* ---------- URL state (lien partageable) ---------- */
 function writeHash(){
   const p = new URLSearchParams();
+  if (state.view && state.view !== 'dash') p.set('v', state.view);
   if (state.preset) p.set('p', state.preset); else { p.set('f', state.from); p.set('t', state.to); }
   p.set('g', state.gran); if (state.inv !== 'all') p.set('i', state.inv);
   ['cmp','exp','ma'].forEach(k => { if (state[k]) p.set(k, 1); });
@@ -156,6 +192,7 @@ function writeHash(){
 function readHash(){
   const h = location.hash.slice(1); if (!h || h.indexOf('=') < 0) return;
   const p = new URLSearchParams(h);
+  if (p.get('v')) state.view = p.get('v');
   if (p.get('g')) state.gran = p.get('g');
   if (p.get('i') && INV[p.get('i')]) state.inv = p.get('i');
   ['cmp','exp','ma'].forEach(k => state[k] = p.get(k) === '1');

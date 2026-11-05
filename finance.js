@@ -13,9 +13,10 @@ let DEF, fin, showAll = false;
 const start = () => fetch('data/finance.json',{cache:'no-store'}).then(r=>r.json()).then(d => { DEF = d; load(); buildForm(); render(); });
 if (PI.DATA) start(); else document.addEventListener('pi:data', start, {once:true});
 
+const R = () => { const d = PI.ENTRY || (PI.derive ? PI.derive() : null); return d && Object.keys(d.revenueActual).length ? d : {revenueActual:DEF.revenueActual, pricesActual:DEF.pricesActual, otherRevenue:DEF.otherRevenue||{}, chargesActual:{}}; };
 function defaults(){
   const lastPrice = {};
-  Object.keys(DEF.pricesActual).sort().forEach(k => { lastPrice[k.slice(-1)] = DEF.pricesActual[k]; });
+  Object.keys(R().pricesActual).sort().forEach(k => { lastPrice[k.slice(-1)] = R().pricesActual[k]; });
   return {invest:{...DEF.invest}, a:{...DEF.assumptions}, defaults:{1:lastPrice[1],2:lastPrice[2],3:lastPrice[3],4:lastPrice[4]}, overrides:{}, scenario:'base'};
 }
 function load(){
@@ -28,8 +29,8 @@ PI.finAssump = () => fin ? fin.a : null;
 /* ---------- model ---------- */
 const netCost = () => fin.invest.ht * (1 + fin.invest.tva) - fin.invest.subsidy;
 function model(){
-  const D = PI.DATA, mq = D.meterQuarters, upd = D.updated;
-  const invoiced = Object.keys(DEF.revenueActual).sort();
+  const D = PI.DATA, mq = D.meterQuarters, upd = D.updated, RR = R();
+  const invoiced = Object.keys(RR.revenueActual).sort();
   const lastInv = invoiced[invoiced.length-1];
   const cy = +upd.slice(0,4);
   const refs = PI.refYears(), lastRef = +refs[refs.length-1];
@@ -45,9 +46,9 @@ function model(){
     if (k <= lastInv) {
       status = 'réel'; kwh = mq[k] != null ? mq[k] : 0;
       const ov = fin.overrides[k];
-      price = ov != null ? ov : DEF.pricesActual[k];
-      rev = ov != null ? kwh * ov / 100 : DEF.revenueActual[k];
-      def = DEF.pricesActual[k];
+      price = ov != null ? ov : RR.pricesActual[k];
+      rev = ov != null ? kwh * ov / 100 : RR.revenueActual[k];
+      def = RR.pricesActual[k];
     } else {
       const ov = fin.overrides[k];
       price = ov != null ? ov : def;
@@ -59,7 +60,7 @@ function model(){
       }
       rev = kwh * price / 100;
     }
-    const other = (DEF.otherRevenue || {})[k] || 0;
+    const other = (RR.otherRevenue || {})[k] || 0;
     qs.push({k, y, t, status, kwh, price, def, rev, other, ov: fin.overrides[k] != null});
   }
   // années
@@ -69,7 +70,10 @@ function model(){
   const ys = Object.values(years).sort((a,b)=>a.y-b.y);
   ys.forEach(Y => {
     Y.status = Y.st.has('projeté') && !Y.st.has('réel') && !Y.st.has('en cours') ? 'projeté' : Y.st.has('en cours') || (Y.st.has('réel') && Y.st.has('projeté')) ? 'en cours' : 'réel';
-    if (Y.y >= cy) Y.charges = fin.a.charges * Math.pow(1 + fin.a.chargesGrowth, Y.y - cy) + (+fin.a.inverterYear === Y.y ? (+fin.a.inverterCost||0) : 0);
+    const act = (RR.chargesActual || {})[Y.y] || 0;
+    if (Y.y > cy) Y.charges = fin.a.charges * Math.pow(1 + fin.a.chargesGrowth, Y.y - cy) + (+fin.a.inverterYear === Y.y ? (+fin.a.inverterCost||0) : 0);
+    else if (Y.y === cy) Y.charges = Math.max(act, fin.a.charges) + (+fin.a.inverterYear === Y.y ? (+fin.a.inverterCost||0) : 0);
+    else Y.charges = act;
     Y.cf = Y.rev + Y.other - Y.charges; cum += Y.cf; Y.cum = cum; Y.pos = cum - cost;
     Y.price = Y.kwh ? Y.rev / Y.kwh * 100 : 0;
   });
@@ -190,6 +194,7 @@ function render(withTable = true){
   renderYearTable(M);
 }
 PI.finRender = () => render();
+PI.finModel = () => model();
 
 function renderTable(M){
   const t = el('priceTable'); t.replaceChildren();

@@ -29,3 +29,13 @@ ou remplacer le fichier.
 - `data/production.json` : données de production (Aurora Vision + relevés de compteur)
 - `data/finance.json` : valeurs financières par défaut (investissement, factures). Les réglages faits
   dans le site sont enregistrés dans le navigateur (exportables / importables en JSON).
+
+## Onglets
+
+- **Tableau de bord** : production, onduleurs, calendrier, puissance, météo, événements, historique.
+- **Finances** : revenus, amortissement, projection, prix de reprise par trimestre (calculés à partir des saisies).
+- **Saisie** : factures GRD, versements banque, autres revenus, charges → `data/entries.json`.
+  Pour enregistrer depuis le site : *Connexion GitHub* avec une clé « fine-grained » limitée au dépôt Polyimmo
+  (permission *Contents : Read and write*). Sans clé, les saisies restent dans le navigateur.
+- **Contrôles** : analyse automatique des incohérences.
+- **Rapports PDF** : rapport mensuel, trimestriel, annuel ou personnalisé.
