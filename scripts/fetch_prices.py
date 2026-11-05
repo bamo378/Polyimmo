@@ -22,29 +22,33 @@ def month_chunks(a, b):
         n = (d.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
         yield d.isoformat(), min(n, e).isoformat(); d = n
 
-os.makedirs("data", exist_ok=True)
-for z in ZONES:
-    pts = {}
-    for a, b in month_chunks(START, END):
-        j = get(f"https://api.energy-charts.info/price?bzn={z}&start={a}&end={b}")
-        u, p = j.get("unix_seconds") or [], j.get("price") or []
-        for i, t in enumerate(u):
-            if p[i] is None: continue
-            step = (u[i + 1] - t) if i + 1 < len(u) else (t - u[i - 1] if i else 900)
-            step = 3600 if step >= 3600 else 900
-            for k in range(step // 900):
-                pts.setdefault(t + 900 * k, round(p[i], 2))
-        time.sleep(3)
-    if not pts: print("aucune donnée", z); continue
-    t0, t1 = min(pts), max(pts)
-    vals = [pts.get(t) for t in range(t0, t1 + 900, 900)]
-    out = {"zone": z, "unit": "EUR/MWh", "step": 900, "start": t0, "values": vals,
-           "source": "energy-charts.info (Fraunhofer ISE) - CC BY 4.0", "updated": dt.datetime.utcnow().isoformat(timespec="minutes") + "Z"}
-    with open(f"data/prices_{z}.json", "w") as f: json.dump(out, f, separators=(",", ":"))
-    print(z, len(vals), "points", dt.datetime.utcfromtimestamp(t0), "->", dt.datetime.utcfromtimestamp(t1))
+def main():
+  os.makedirs("data", exist_ok=True)
+  for z in ZONES:
+      pts = {}
+      for a, b in month_chunks(START, END):
+          j = get(f"https://api.energy-charts.info/price?bzn={z}&start={a}&end={b}")
+          u, p = j.get("unix_seconds") or [], j.get("price") or []
+          for i, t in enumerate(u):
+              if p[i] is None: continue
+              step = (u[i + 1] - t) if i + 1 < len(u) else (t - u[i - 1] if i else 900)
+              step = 3600 if step >= 3600 else 900
+              for k in range(step // 900):
+                  pts.setdefault(t + 900 * k, round(p[i], 2))
+          time.sleep(3)
+      if not pts: print("aucune donnée", z); continue
+      t0, t1 = min(pts), max(pts)
+      vals = [pts.get(t) for t in range(t0, t1 + 900, 900)]
+      out = {"zone": z, "unit": "EUR/MWh", "step": 900, "start": t0, "values": vals,
+             "source": "energy-charts.info (Fraunhofer ISE) - CC BY 4.0", "updated": dt.datetime.utcnow().isoformat(timespec="minutes") + "Z"}
+      with open(f"data/prices_{z}.json", "w") as f: json.dump(out, f, separators=(",", ":"))
+      print(z, len(vals), "points", dt.datetime.utcfromtimestamp(t0), "->", dt.datetime.utcfromtimestamp(t1))
 
-fx = get(f"https://api.frankfurter.dev/v1/{START}..{END}?base=EUR&symbols=CHF")
-rates = {d: r["CHF"] for d, r in fx.get("rates", {}).items()}
-with open("data/fx_eurchf.json", "w") as f:
-    json.dump({"source": "BCE via frankfurter.dev", "rates": rates}, f, separators=(",", ":"))
-print("fx", len(rates))
+  fx = get(f"https://api.frankfurter.dev/v1/{START}..{END}?base=EUR&symbols=CHF")
+  rates = {d: r["CHF"] for d, r in fx.get("rates", {}).items()}
+  with open("data/fx_eurchf.json", "w") as f:
+      json.dump({"source": "BCE via frankfurter.dev", "rates": rates}, f, separators=(",", ":"))
+  print("fx", len(rates))
+
+if __name__ == "__main__":
+  main()

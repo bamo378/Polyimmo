@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/prices.yml"
       - "scripts/fetch_prices.py"
+      - "scripts/fetch_history.py"
 permissions:
   contents: write
 concurrency:
@@ -21,11 +22,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: python scripts/fetch_prices.py
+      - run: PYTHONPATH=scripts python scripts/fetch_history.py
       - name: Enregistrer
         run: |
           git config user.name "polyimmo-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/prices_*.json data/fx_eurchf.json
+          git add data/prices_*.json data/fx_eurchf.json data/history_*.json data/fx_hist.json
           git diff --cached --quiet || git commit -m "Prix du marché : mise à jour automatique"
           git pull --rebase origin main
           git push
