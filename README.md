@@ -13,3 +13,10 @@ Site en ligne : https://bamo378.github.io/polyimmo/
 3. Dans `index.html`, coller l'URL entre les guillemets de la ligne :
    `const AURORA_PUBLIC_URL = "";`
 4. Enregistrer (commit). Le site se met à jour en 1–2 minutes.
+
+## Données de production
+
+`data/production.json` contient la production journalière issue d'Aurora Vision (depuis le 22.09.2025)
+et les relevés de compteur trimestriels (depuis 2023). Le site lit ce fichier et calcule tout le reste.
+Pour mettre à jour : demander à Claude de récupérer les nouvelles données Aurora Vision (via Chrome),
+ou remplacer le fichier.
