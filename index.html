@@ -4,283 +4,259 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PolyImmo Solaire</title>
-<meta name="description" content="Tableau de bord de production de l'installation photovoltaïque PolyImmo à Bulle (185,92 kWc).">
-<meta name="theme-color" content="#1a171b">
+<meta name="description" content="Suivi de l'installation photovoltaïque PolyImmo à Bulle : production, revenus, remboursement.">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
   color-scheme: light;
-  --bg:#f3f4f1; --surface:#ffffff; --surface-2:#f7f8f5; --ink:#111827; --ink-2:#4b5563; --muted:#8a919c;
-  --line:#e6e8e3; --grid:#eef0eb;
-  --sun:#e89a00; --sun-2:#f7c548; --sun-soft:#fdf1d3;
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f7f8fa; --ink:#0f172a; --ink-2:#475569; --muted:#8b95a5;
+  --line:#e7eaef; --grid:#eef1f4;
+  --brand:#e31818; --brand-soft:#fdeeee;
+  --sun:#f2a900; --sun-2:#f8cf63; --sun-soft:#fff6df;
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
-  --good:#16a34a; --brand:#e31818; --brand-ink:#1a171b;
-  --heat0:#eef0eb; --heat1:#fde7b0; --heat2:#f8c95a; --heat3:#eda100; --heat4:#c26f00; --heat5:#7c4400;
-  --shadow:0 1px 2px rgba(17,24,39,.04),0 8px 24px -12px rgba(17,24,39,.12);
-  --radius:18px;
+  --good:#16a34a; --bad:#dc2626; --warn:#d97706;
+  --heat0:#eef1f4; --heat1:#fde7b0; --heat2:#f8c95a; --heat3:#eda100; --heat4:#c26f00; --heat5:#7c4400;
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 6px 20px -10px rgba(15,23,42,.10);
+  --radius:16px;
 }
 @media (prefers-color-scheme: dark){
   :root:where(:not([data-theme="light"])){
     color-scheme: dark;
-    --bg:#0b111b; --surface:#121a27; --surface-2:#172131; --ink:#eef1f6; --ink-2:#b4bcc9; --muted:#7d8798;
-    --line:#223047; --grid:#1b2638;
-    --sun:#f2a900; --sun-2:#ffd36b; --sun-soft:#2c2412;
+    --bg:#0c1118; --surface:#141b25; --surface-2:#1a2230; --ink:#eef2f7; --ink-2:#b6c0cf; --muted:#7f8a9c; --line:#243042; --grid:#1d2736;
+    --brand:#ff4d4d; --brand-soft:#3a1717; --sun:#f5b21a; --sun-2:#ffd36b; --sun-soft:#2c2412;
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
-    --heat0:#1b2638; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.6);
+    --heat0:#1d2736; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --bg:#0b111b; --surface:#121a27; --surface-2:#172131; --ink:#eef1f6; --ink-2:#b4bcc9; --muted:#7d8798;
-  --line:#223047; --grid:#1b2638;
-  --sun:#f2a900; --sun-2:#ffd36b; --sun-soft:#2c2412;
+  --bg:#0c1118; --surface:#141b25; --surface-2:#1a2230; --ink:#eef2f7; --ink-2:#b6c0cf; --muted:#7f8a9c; --line:#243042; --grid:#1d2736;
+  --brand:#ff4d4d; --brand-soft:#3a1717; --sun:#f5b21a; --sun-2:#ffd36b; --sun-soft:#2c2412;
   --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
-  --heat0:#1b2638; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.6);
+  --heat0:#1d2736; --heat1:#3a2e12; --heat2:#6b4e0f; --heat3:#a87400; --heat4:#e09c00; --heat5:#ffcf5c;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sans-serif;line-height:1.5;
-  -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
 .num{font-variant-numeric:tabular-nums}
-.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.hidden{display:none!important}
+button{font-family:inherit}
 
-/* ---------- hero ---------- */
-.hero{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a171b 0%,#221d21 55%,#2a1d1d 100%);color:#f5f7fa;padding:22px 0 84px}
-.hero::before{content:"";position:absolute;inset:auto -10% -60% auto;width:720px;height:720px;border-radius:50%;
-  background:radial-gradient(circle,rgba(242,169,0,.55) 0%,rgba(242,169,0,.12) 40%,transparent 68%);pointer-events:none;
-  animation:glow 9s ease-in-out infinite alternate}
-.hero::after{content:"";position:absolute;left:-180px;top:-220px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(227,24,24,.28),transparent 65%);pointer-events:none}
-@keyframes glow{from{transform:translate(0,0) scale(1)}to{transform:translate(-40px,20px) scale(1.08)}}
-@media (prefers-reduced-motion:reduce){.hero::before{animation:none}}
-.hero > .wrap{position:relative;z-index:1}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:-.02em;color:#fff;text-decoration:none}
-.logo img{height:52px;width:auto;display:block;background:#fff;padding:6px 12px;border-radius:14px;box-shadow:0 6px 20px -8px rgba(0,0,0,.5)}
-.logo .tagline{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#d7d2d6;border-left:2px solid var(--brand);padding-left:10px}
-.logo .mark{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 200deg,#ffd36b,#f2a900,#e07b00,#ffd36b);
-  box-shadow:0 0 0 5px rgba(242,169,0,.18)}
-.logo small{font-weight:600;color:#9fb0c8;font-size:.8rem;margin-left:2px}
-.tools{display:flex;gap:8px;align-items:center}
-.iconbtn{appearance:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;
-  border-radius:12px;height:38px;padding:0 12px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;
-  display:inline-flex;align-items:center;gap:8px;transition:background .2s}
-.iconbtn:hover{background:rgba(255,255,255,.14)}
-.iconbtn svg{width:16px;height:16px}
-.hero-body{position:relative;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:end;margin-top:40px}
-@media (max-width:860px){.hero-body{grid-template-columns:1fr}}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:#ff8a8a}
-.pulse{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 10px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
-.hero h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;letter-spacing:-.035em;margin:10px 0 10px;font-weight:800}
-.hero p.lead{color:#b9c6d8;margin:0;max-width:560px}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.hs{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;backdrop-filter:blur(6px)}
-.hs span{display:block;font-size:.74rem;color:#9fb0c8}
-.hs strong{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
-.hs em{font-style:normal;font-size:.72rem;color:#8aa0bd}
+/* ---------- barre du haut ---------- */
+.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:68px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);flex:none}
+.logo img{height:40px;width:auto;display:block}
+:root[data-theme="dark"] .logo img{background:#fff;border-radius:8px;padding:3px 6px}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .logo img{background:#fff;border-radius:8px;padding:3px 6px}}
+.logo span{font-size:.78rem;font-weight:700;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;line-height:1.2}
+.tabs{display:flex;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none;height:100%;align-items:stretch}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 14px;cursor:pointer;white-space:nowrap;
+  position:relative;display:inline-flex;align-items:center;gap:7px;transition:color .15s}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-current="page"]{color:var(--ink)}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
+.top-r{display:flex;gap:8px;align-items:center;flex:none}
+.upd{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.icbtn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center}
+.icbtn svg{width:17px;height:17px}
+.tbadge-n{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--warn);color:#fff;font-size:.7rem;font-weight:800}
+.tbadge-n.err{background:var(--bad)}
+@media (max-width:900px){
+  .top .wrap{flex-wrap:wrap;height:auto;padding-top:10px;gap:8px}
+  .tabs{order:3;flex-basis:100%;height:46px;margin:0 -16px;padding:0 6px}
+  .upd{display:none}
+  .top-r{margin-left:auto}
+}
 
-/* ---------- filter bar ---------- */
-.filters{position:relative;z-index:20;margin-top:-56px}
-@media (min-width:861px){.filters{position:sticky;top:0}}
-.fbar{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);
-  border-radius:16px;box-shadow:var(--shadow);padding:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
-.seg button{appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:.84rem;font-weight:700;
-  padding:7px 11px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
-.seg button:hover{color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12),inset 0 -2px 0 var(--brand)}
-.range{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--ink-2)}
-.range input{font:inherit;font-size:.84rem;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:6px 8px}
-.flabel{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-left:4px}
-.spacer{flex:1}
-.chip{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-size:.84rem;font-weight:700;
-  padding:7px 12px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.chip:hover{border-color:var(--muted)}
-.chip svg{width:15px;height:15px}
-.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none}
-.toggle input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background .2s;margin:0}
+/* ---------- en-têtes de page ---------- */
+main.wrap{padding-top:28px;padding-bottom:48px}
+.page-h{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.page-h h1{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.025em;margin:0;line-height:1.15}
+.page-h p{margin:6px 0 0;color:var(--ink-2);font-size:.95rem;max-width:680px}
+.view{padding-top:0}
+.view-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+h2.sect{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.025em;margin:0}
+.view-head .sub{color:var(--ink-2);margin:6px 0 0;font-size:.95rem;max-width:720px}
+
+/* ---------- cartes ---------- */
+.grid{display:grid;gap:16px}
+.grid > *{min-width:0}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+.g21{grid-template-columns:2fr 1fr}
+@media (max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g21{grid-template-columns:1fr}}
+@media (max-width:760px){.g2{grid-template-columns:1fr}}
+@media (max-width:480px){.g4{grid-template-columns:1fr}}
+.mt{margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card h2{font-size:1.05rem;margin:0;letter-spacing:-.01em}
+.card .sub{font-size:.84rem;color:var(--ink-2);margin:3px 0 0}
+.chart{position:relative;height:300px}
+.chart.sm{height:240px}
+.chart.xs{height:200px}
+.summary{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:.86rem;color:var(--ink-2)}
+.summary b{color:var(--ink)}
+.note{font-size:.78rem;color:var(--muted);margin:8px 0 0}
+
+/* KPI */
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k{font-size:.84rem;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.kpi .v{font-size:clamp(1.6rem,2.8vw,2.1rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-top:6px}
+.kpi .v small{font-size:.95rem;font-weight:700;color:var(--ink-2);margin-left:4px;letter-spacing:0}
+.kpi .d{font-size:.82rem;color:var(--ink-2);margin-top:4px}
+.kpi.accent{border-top:3px solid var(--brand)}
+.trend{display:inline-flex;align-items:center;gap:3px;font-weight:700;font-size:.8rem;padding:2px 7px;border-radius:99px}
+.trend.up{color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.trend.down{color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.trend.flat{color:var(--ink-2);background:var(--surface-2)}
+.bar{height:8px;border-radius:99px;background:var(--grid);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--brand);width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.bar.sun i{background:var(--sun)}
+.status{display:inline-flex;align-items:center;gap:8px;font-weight:800}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 18%,transparent)}
+.dot.warn{background:var(--warn);box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 18%,transparent)}
+.dot.bad{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 18%,transparent)}
+.help{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:.66rem;font-weight:800;cursor:help;position:relative}
+.help:hover::after,.help:focus::after{content:attr(data-tip);position:absolute;left:50%;top:22px;transform:translateX(-50%);width:240px;background:var(--ink);color:var(--bg);font-size:.76rem;font-weight:500;line-height:1.4;
+  padding:9px 11px;border-radius:10px;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:left}
+
+/* chips (filtres des graphiques) */
+.chips{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px;flex-wrap:wrap}
+.chips button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.82rem;font-weight:600;padding:6px 11px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.chips button:hover{color:var(--ink)}
+.chips button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.84rem;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.seg button:disabled{opacity:.5}
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;font-weight:600;color:var(--ink-2);cursor:pointer;user-select:none}
+.toggle input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background .2s;margin:0;flex:none}
 .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
 .toggle input:checked{background:var(--brand)}
 .toggle input:checked::after{transform:translateX(14px)}
-
-/* ---------- cards ---------- */
-main{padding:18px 0 40px}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:6px 0 16px}
-@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
-  transition:transform .25s,opacity .3s}
-.kpi:hover{transform:translateY(-2px)}
-.kpi .k{font-size:.78rem;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px}
-.kpi .k i{width:22px;height:22px;border-radius:7px;background:var(--sun-soft);display:grid;place-items:center;color:var(--sun)}
-.kpi .k i svg{width:13px;height:13px}
-.kpi .v{font-size:clamp(1.35rem,2.4vw,1.8rem);font-weight:800;letter-spacing:-.03em;margin-top:8px;line-height:1.1}
-.kpi .v small{font-size:.9rem;font-weight:700;color:var(--ink-2);margin-left:3px}
-.kpi .d{font-size:.76rem;color:var(--muted);margin-top:4px}
-.delta{font-weight:800}
-.delta.up{color:var(--good)} .delta.down{color:#dc2626}
-.grid{display:grid;gap:16px}
-.g-2{grid-template-columns:1.6fr 1fr}
-.g-2b{grid-template-columns:1fr 1fr}
-@media (max-width:960px){.g-2,.g-2b{grid-template-columns:1fr}}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0;
-  transition:opacity .3s}
-.card.loading{opacity:.55}
-.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.card h2{font-size:1.02rem;margin:0;letter-spacing:-.01em}
-.card .sub{font-size:.8rem;color:var(--muted);margin:2px 0 0}
-.chart{position:relative;height:320px}
-.chart.sm{height:260px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--ink-2);font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);font-weight:600}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .legend i.ln{height:3px;width:14px;border-radius:2px}
-.mini-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:2px;background:var(--surface-2);flex-wrap:wrap}
-.mini-seg button{appearance:none;border:0;background:transparent;font:inherit;font-size:.76rem;font-weight:700;color:var(--ink-2);padding:5px 9px;border-radius:8px;cursor:pointer}
-.mini-seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.range{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--ink-2)}
+.range input{font:inherit;font-size:.84rem;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:9px;padding:5px 8px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.84rem;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.chip:hover{border-color:var(--muted)}
+.chip svg{width:15px;height:15px}
+.link{appearance:none;border:0;background:none;color:var(--brand);font-weight:700;font-size:.86rem;cursor:pointer;padding:0}
+.flabel{font-size:.74rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.spacer{flex:1}
 
-/* heatmap */
+/* liste « à vérifier » */
+.todo{display:grid;gap:8px}
+.todo .it{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:.86rem}
+.todo .it b{display:block;font-size:.88rem}
+.todo .it span{color:var(--ink-2)}
+.todo .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.74rem;font-weight:800;background:var(--warn)}
+.todo .ic.err{background:var(--bad)} .todo .ic.ok{background:var(--good)}
+
+/* onduleurs */
+.inv-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.inv{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:12px 14px;border-left:4px solid var(--c)}
+.inv .t{font-size:.8rem;font-weight:700;color:var(--ink-2)}
+.inv strong{display:block;font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.inv em{font-style:normal;font-size:.78rem;color:var(--ink-2)}
+
+/* calendrier */
 .heat-scroll{overflow-x:auto;padding-bottom:4px}
-.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,15px);gap:4px;width:max-content}
-.heat .c{width:15px;height:15px;border-radius:3px;background:var(--heat0);cursor:pointer;transition:transform .12s}
-.heat .c:hover,.heat .c:focus{transform:scale(1.35);outline:2px solid var(--surface);outline-offset:0}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,14px);gap:4px;width:max-content}
+.heat .c{width:14px;height:14px;border-radius:3px;background:var(--heat0);cursor:pointer;transition:transform .12s}
+.heat .c:hover,.heat .c:focus{transform:scale(1.35);outline:2px solid var(--surface)}
 .heat .c.empty{background:transparent;cursor:default}
 .heat .c.na{background:repeating-linear-gradient(45deg,var(--grid) 0 2px,transparent 2px 4px)}
-.heat-months{display:grid;grid-auto-flow:column;grid-auto-columns:19px;font-size:.68rem;color:var(--muted);margin:0 0 4px 30px;width:max-content}
+.heat-months{display:grid;grid-auto-flow:column;grid-auto-columns:18px;font-size:.68rem;color:var(--muted);margin:0 0 4px 30px;width:max-content}
 .heat-wrap{display:flex;gap:6px}
-.heat-days{display:grid;grid-template-rows:repeat(7,15px);gap:4px;font-size:.66rem;color:var(--muted);width:24px;line-height:15px}
-.heat-legend{display:flex;align-items:center;gap:4px;font-size:.72rem;color:var(--muted);margin-top:10px}
+.heat-days{display:grid;grid-template-rows:repeat(7,14px);gap:4px;font-size:.66rem;color:var(--muted);width:24px;line-height:14px}
+.heat-legend{display:flex;align-items:center;gap:4px;font-size:.74rem;color:var(--muted);margin-top:10px;flex-wrap:wrap}
 .heat-legend b{width:12px;height:12px;border-radius:3px;display:inline-block}
-
-/* records */
-.records{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rec{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-.rec span{font-size:.74rem;color:var(--muted);font-weight:700}
-.rec strong{display:block;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
-.rec em{font-style:normal;font-size:.74rem;color:var(--ink-2)}
-.gauge{margin-top:14px}
-.gauge .bar{height:10px;border-radius:99px;background:var(--grid);overflow:hidden}
-.gauge .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun-2),var(--sun));width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
-.gauge .lbl{display:flex;justify-content:space-between;font-size:.76rem;color:var(--ink-2);margin-bottom:6px;font-weight:600}
-
-/* table */
-.tablewrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:.86rem}
-th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-thead th{position:sticky;top:0;background:var(--surface-2);font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.hidden{display:none!important}
-
-/* tooltip (heatmap) */
-.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:10px;font-size:.78rem;
-  box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;white-space:nowrap}
-.tip.on{opacity:1;transform:none}
+.tip{position:fixed;z-index:80;pointer-events:none;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:10px;font-size:.78rem;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .12s;white-space:nowrap}
+.tip.on{opacity:1}
 .tip b{font-size:.92rem}
 
-.aurora .placeholder{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted);font-size:.9rem}
-.aurora iframe{width:100%;min-height:620px;border:0;border-radius:12px}
-footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
-.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
-.reveal.in{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
-@media (max-width:520px){.hs strong{font-size:1.05rem}.hs{padding:11px}}
-
-/* ---------- v3 additions ---------- */
-.grid > *{min-width:0}
-.nav{display:flex;gap:4px;margin-left:auto;margin-right:8px}
-.nav a{color:#d7d2d6;text-decoration:none;font-size:.84rem;font-weight:700;padding:8px 10px;border-radius:10px}
-.nav a:hover{background:rgba(255,255,255,.08);color:#fff}
-@media (max-width:860px){.nav{display:none}}
-.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.kpi.warn{border-color:color-mix(in srgb,#dc2626 45%,var(--line))}
-.alert{display:flex;gap:10px;align-items:center;background:color-mix(in srgb,#dc2626 10%,var(--surface));border:1px solid color-mix(in srgb,#dc2626 35%,var(--line));
-  color:var(--ink);border-radius:14px;padding:10px 14px;font-size:.88rem;margin:6px 0 4px}
-.alert b{color:#dc2626}
-.inv-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
-@media (max-width:860px){.inv-grid{grid-template-columns:1fr}}
-.inv-cards{display:grid;gap:10px}
-.inv{border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:12px 14px;position:relative;overflow:hidden}
-.inv::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
-.inv .t{display:flex;justify-content:space-between;font-size:.8rem;font-weight:800}
-.inv .t span{color:var(--muted);font-weight:600}
-.inv strong{display:block;font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-top:4px}
-.inv .bar{height:6px;border-radius:99px;background:var(--grid);margin-top:8px;overflow:hidden}
-.inv .bar i{display:block;height:100%;background:var(--c);border-radius:99px;transition:width .8s}
-.inv em{font-style:normal;font-size:.76rem;color:var(--ink-2)}
-.wx-now{display:flex;align-items:center;gap:14px;padding:6px 0 14px;border-bottom:1px solid var(--line)}
-.wx-now .ic{font-size:2.4rem;line-height:1}
-.wx-now strong{font-size:1.8rem;font-weight:800;letter-spacing:-.03em}
+/* météo / événements */
+.wx-now{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.wx-now .ic{font-size:2.2rem;line-height:1}
+.wx-now strong{font-size:1.6rem;font-weight:800}
 .wx-days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.wx-d{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;font-size:.8rem}
-.wx-d .ic{font-size:1.4rem;display:block}
-.wx-d b{display:block;font-size:.86rem}
-.pill{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:800;padding:5px 10px;border-radius:99px;
-  background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
-.sev{display:inline-block;font-size:.7rem;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
-.sev.moyenne{border-color:color-mix(in srgb,#d97706 50%,var(--line))}
-td.l,th.l{text-align:left}
-/* finance */
-.fin{margin-top:28px;scroll-margin-top:90px}
-.fin-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
-h2.sect{font-size:clamp(1.4rem,2.6vw,1.9rem);letter-spacing:-.03em;margin:0}
-.fin-head .sub{color:var(--muted);margin:4px 0 0;font-size:.88rem;max-width:640px}
-.fin-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.seg button:disabled{opacity:.55;cursor:default}
+.wx-d{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center;font-size:.78rem}
+.wx-d .ic{font-size:1.3rem;display:block}
+.wx-d b{display:block;font-size:.82rem}
+details.more{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+details.more summary{cursor:pointer;font-weight:700;font-size:.88rem;color:var(--ink);list-style:none;display:flex;align-items:center;gap:8px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"›";display:inline-block;transition:transform .2s;font-size:1.1rem;color:var(--muted)}
+details.more[open] summary::before{transform:rotate(90deg)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:5px 10px;border-radius:99px;background:color-mix(in srgb,var(--good) 12%,transparent);color:var(--good)}
+.sev{display:inline-block;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child,td.l,th.l{text-align:left}
+thead th{position:sticky;top:0;background:var(--surface-2);font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.tablewrap{overflow:auto;max-height:380px;border:1px solid var(--line);border-radius:12px}
+
+/* finances */
+.big-answer{display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:center}
+@media (max-width:860px){.big-answer{grid-template-columns:1fr}}
+.big-answer h2{font-size:clamp(1.3rem,2.6vw,1.75rem)!important;letter-spacing:-.025em;line-height:1.2}
+.big-answer .bar{height:14px;margin-top:16px}
+.big-answer .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fact{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.fact span{display:block;font-size:.76rem;color:var(--ink-2);font-weight:600}
+.fact strong{display:block;font-size:1.1rem;font-weight:800;margin-top:2px}
+.sliders{display:grid;gap:18px}
+.sl label{display:flex;justify-content:space-between;font-size:.86rem;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.sl label b{color:var(--ink);font-weight:800}
+.sl input[type=range]{width:100%;accent-color:var(--brand)}
+.sl .hint{font-size:.76rem;color:var(--muted);margin-top:2px}
+details.adv{margin-top:16px}
+details.adv > summary{cursor:pointer;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+details.adv > summary::-webkit-details-marker{display:none}
+details.adv > summary::before{content:"›";font-size:1.2rem;color:var(--muted);transition:transform .2s}
+details.adv[open] > summary::before{transform:rotate(90deg)}
+details.adv > summary small{font-weight:500;color:var(--muted)}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 @media (max-width:520px){.form{grid-template-columns:1fr}}
-.form label{display:flex;flex-direction:column;gap:4px;font-size:.76rem;font-weight:700;color:var(--ink-2)}
-.form input{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;width:100%}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--ink-2)}
+.form input,.form select{font:inherit;font-size:.92rem;font-weight:600;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;width:100%}
 .form input:focus,.ptable input:focus,.defprices input:focus{outline:2px solid var(--brand);outline-offset:1px}
 .form .calc{grid-column:1/-1;display:flex;justify-content:space-between;background:var(--sun-soft);border-radius:10px;padding:9px 12px;font-size:.86rem;font-weight:700}
-.form .hint{grid-column:1/-1;font-size:.74rem;color:var(--muted);margin:-4px 0 0}
+.form .hint{grid-column:1/-1}
 .price-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .defprices{display:flex;gap:6px;flex-wrap:wrap}
-.defprices label{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:800;color:var(--ink-2)}
-.defprices input,.ptable input{font:inherit;font-size:.84rem;font-weight:700;width:72px;text-align:right;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:8px;padding:5px 7px}
+.defprices label{display:inline-flex;align-items:center;gap:4px;font-size:.8rem;font-weight:700;color:var(--ink-2)}
+.defprices input,.ptable input{font:inherit;font-size:.84rem;font-weight:600;width:72px;text-align:right;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:8px;padding:5px 7px}
 .ptable td{padding:5px 8px}
-.ptable td.past input{background:transparent;border-color:transparent;color:var(--ink)}
+.ptable td.past input{background:transparent;border-color:transparent}
 .ptable td.past input:hover{border-color:var(--line)}
 .ptable td.cur input{border-color:var(--sun)}
-.ptable input.ov{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface))}
-.ptable input::placeholder{color:var(--muted);font-weight:600}
+.ptable input.ov{border-color:var(--brand);background:var(--brand-soft)}
 .ptable tr.yr-hidden{display:none}
 tr.proj td{color:var(--ink-2)}
 tr.cur td{background:color-mix(in srgb,var(--sun) 8%,transparent)}
-td.neg{color:#dc2626} td.pos{color:var(--good)}
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;font-weight:700;
-  opacity:0;transition:opacity .2s,transform .2s;z-index:60;pointer-events:none}
+td.neg{color:var(--bad)} td.pos{color:var(--good)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-@media print{
-  .filters,.tools,.nav,.fin-tools,.price-bar .chip,#mainMode,#invMode,#pwDays,#hourDays{display:none!important}
-  body{background:#fff}
-  .hero{padding:16px 0 20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .card,.kpi{box-shadow:none;break-inside:avoid}
-  .reveal{opacity:1!important;transform:none!important}
-  .grid,.g-2,.g-2b{grid-template-columns:1fr 1fr}
-  .aurora{display:none}
-}
-
+footer{color:var(--muted);font-size:.78rem;padding:4px 0 36px}
+@media print{.top,.drawer,.modal,.drawer-bg,.chips,.ctl{display:none!important}.card,.kpi{box-shadow:none;break-inside:avoid}}
 /* ---------- v4 : onglets, saisie, contrôles, rapports ---------- */
-.tabs{position:relative;display:flex;gap:6px;margin-top:22px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{appearance:none;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#d7d2d6;font:inherit;font-size:.88rem;font-weight:700;
-  padding:9px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:background .2s,color .2s,border-color .2s}
-.tabs button svg{width:16px;height:16px}
-.tabs button:hover{background:rgba(255,255,255,.1);color:#fff}
-.tabs button[aria-current="page"]{background:#fff;color:#1a171b;border-color:#fff;box-shadow:inset 0 -3px 0 var(--brand)}
-.tbadge-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#d97706;color:#fff;font-size:.72rem;font-weight:800}
-.tbadge-n.err{background:#dc2626}
-body:not([data-page="dash"]) .hero{padding-bottom:26px}
-.view{padding-top:22px}
-.view-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
-.view-head .sub{color:var(--muted);margin:4px 0 0;font-size:.88rem;max-width:720px}
 .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
 @media (max-width:860px){.quick{grid-template-columns:repeat(2,1fr)}}
 .qbtn{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;border-radius:var(--radius);padding:16px;cursor:pointer;
@@ -381,222 +357,176 @@ body.noscroll{overflow:hidden}
 </style>
 </head>
 <body>
-
-<section class="hero">
+<header class="top">
   <div class="wrap">
-    <div class="topbar">
-      <a class="logo" href="#" aria-label="PolyImmo">
-        <img src="assets/logo.png" alt="PolyImmo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'mark'}));document.getElementById('logoText').classList.remove('hidden')">
-        <span id="logoText" class="hidden">PolyImmo<small>Solaire</small></span>
-        <span class="tagline">Énergie solaire</span>
-      </a>
-      <div class="tools">
-        <button class="iconbtn" id="themeBtn" type="button" aria-label="Changer de thème">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Thème</span>
-        </button>
-      </div>
-    </div>
+    <a class="logo" href="#" aria-label="PolyImmo — accueil"><img src="assets/logo.png" alt="PolyImmo"><span>Installation solaire<br>Bulle</span></a>
     <nav class="tabs" id="tabs" aria-label="Onglets">
-      <button data-v="dash" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Tableau de bord</button>
-      <button data-v="fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.6-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3.2-1.6M12 6v2M12 16v2"/></svg>Finances</button>
-      <button data-v="saisie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Saisie</button>
-      <button data-v="controles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg>Contrôles<span class="tbadge-n hidden" id="tabBadge">0</span></button>
-      <button data-v="rapports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Rapports PDF</button>
+      <button data-v="home" aria-current="page">Accueil</button>
+      <button data-v="prod">Production</button>
+      <button data-v="fin">Finances</button>
+      <button data-v="saisie">Saisie</button>
+      <button data-v="controles">Contrôles <span class="tbadge-n hidden" id="tabBadge">0</span></button>
+      <button data-v="rapports">Rapports PDF</button>
     </nav>
-    <div class="hero-body" data-view="dash">
-      <div>
-        <div class="eyebrow"><span class="pulse"></span><span id="updatedTxt">Données Aurora Vision</span></div>
-        <h1>Installation solaire<br>de Bulle</h1>
-        <p class="lead">185,92 kWc sur le toit du Ch. des Prairies 12 — deux onduleurs FIMER, en service depuis juin 2023. Suivez la production jour par jour, explorez l'historique et comparez les saisons.</p>
-      </div>
-      <div class="hero-stats">
-        <div class="hs"><span>Total produit</span><strong class="num" id="hTotal">–</strong><em>depuis 2023</em></div>
-        <div class="hs"><span>Cette année</span><strong class="num" id="hYear">–</strong><em id="hYearSub">&nbsp;</em></div>
-        <div class="hs"><span>Hier</span><strong class="num" id="hYday">–</strong><em id="hYdaySub">&nbsp;</em></div>
-      </div>
+    <div class="top-r">
+      <span class="upd" id="updTop"></span>
+      <button class="icbtn" id="themeBtn" type="button" aria-label="Thème clair ou sombre" title="Thème clair / sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ================= ACCUEIL ================= -->
+<section data-view="home" id="home">
+  <div class="page-h">
+    <div><h1>Votre installation en un coup d'œil</h1><p id="homeLead">185,92 kWc · Ch. des Prairies 12, Bulle · en service depuis juin 2023</p></div>
+    <button class="chip" type="button" data-quick="lastQuarter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Rapport du dernier trimestre</button>
+  </div>
+  <div class="grid g4" id="homeKpis"></div>
+
+  <div class="grid g21 mt">
+    <section class="card">
+      <div class="card-h">
+        <div><h2>Production d'électricité</h2><p class="sub" id="hcSub">kWh produits</p></div>
+        <div class="ctl">
+          <div class="chips" id="hcRange"><button data-r="7">7 jours</button><button data-r="30" aria-pressed="true">30 jours</button><button data-r="12m">12 mois</button><button data-r="years">Par année</button></div>
+        </div>
+      </div>
+      <div class="ctl" style="margin-bottom:8px"><label class="toggle"><input type="checkbox" id="hcCmp"> Comparer avec l'année précédente</label><span class="legend" id="hcLegend"></span></div>
+      <div class="chart"><canvas id="cHome"></canvas></div>
+      <div class="summary" id="hcSum"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><div><h2>À vérifier</h2><p class="sub">Analyse automatique de vos données</p></div></div>
+      <div class="todo" id="homeTodo"></div>
+      <p class="note"><button class="link" type="button" data-go="controles">Voir tous les contrôles →</button></p>
+    </section>
+  </div>
+
+  <section class="card mt">
+    <div class="card-h">
+      <div><h2>Revenus de la vente d'électricité</h2><p class="sub">Montants encaissés selon les factures du GRD (CHF TTC)</p></div>
+      <div class="chips" id="hrRange"><button data-r="q" aria-pressed="true">Par trimestre</button><button data-r="y">Par année</button></div>
+    </div>
+    <div class="chart sm"><canvas id="cHomeRev"></canvas></div>
+    <div class="summary" id="hrSum"></div>
+  </section>
+</section>
+
+<!-- ================= PRODUCTION ================= -->
+<section data-view="prod" id="prod" class="hidden">
+  <div class="page-h">
+    <div><h1>Production</h1><p>Données Aurora Vision au jour près depuis le 22.09.2025, relevés de compteur depuis 2023.</p></div>
+    <button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Exporter en CSV</button>
+  </div>
+  <div class="grid g3" id="prodKpis" style="margin-bottom:16px"></div>
+  <section class="card">
+    <div class="card-h">
+      <div><h2 id="pcTitle">Production</h2><p class="sub" id="pcSub"></p></div>
+      <div class="chips" id="pcRange"><button data-r="7">7 j</button><button data-r="30" aria-pressed="true">30 j</button><button data-r="90">3 mois</button><button data-r="12m">12 mois</button><button data-r="ytd">Cette année</button><button data-r="q">Trimestres</button><button data-r="years">Années</button><button data-r="custom">Dates…</button></div>
+    </div>
+    <div class="ctl" style="margin-bottom:8px">
+      <span class="range hidden" id="pcDates"><input type="date" id="pcFrom" aria-label="Du"><span>→</span><input type="date" id="pcTo" aria-label="Au"></span>
+      <label class="toggle" id="pcCmpWrap"><input type="checkbox" id="pcCmp"> Année précédente</label>
+      <label class="toggle" id="pcExpWrap"><input type="checkbox" id="pcExp"> Production attendue <span class="help" tabindex="0" data-tip="Ce que l'installation produit normalement à cette période : moyenne des 2 dernières années complètes, répartie selon les mois.">?</span></label>
+      <label class="toggle" id="pcMaWrap"><input type="checkbox" id="pcMa"> Moyenne glissante <span class="help" tabindex="0" data-tip="Lisse les variations dues à la météo : moyenne des 7 derniers jours (ou 4 semaines / 3 mois).">?</span></label>
+      <span class="legend" id="pcLegend"></span>
+    </div>
+    <div class="chart"><canvas id="cProd"></canvas></div>
+    <div class="summary" id="pcSum"></div>
+  </section>
+
+  <div class="grid g2 mt">
+    <section class="card">
+      <div class="card-h">
+        <div><h2>Les deux onduleurs</h2><p class="sub">Part de chaque onduleur dans la production</p></div>
+        <div class="chips" id="ivRange"><button data-r="30" aria-pressed="true">30 j</button><button data-r="12m">12 mois</button><button data-r="all">Tout</button></div>
+      </div>
+      <div class="inv-tiles" id="invTiles"></div>
+      <div class="chart xs"><canvas id="cInv"></canvas></div>
+    </section>
+    <section class="card">
+      <div class="card-h">
+        <div><h2>Une journée en détail</h2><p class="sub" id="dySub">Puissance produite au fil de la journée (kW)</p></div>
+      </div>
+      <div class="chips" id="dyDays" style="margin-bottom:10px"></div>
+      <div class="chart xs"><canvas id="cDay"></canvas></div>
+    </section>
+  </div>
+
+  <section class="card mt">
+    <div class="card-h"><div><h2>Calendrier des 12 derniers mois</h2><p class="sub">Une case par jour · plus c'est foncé, plus la production est élevée · cliquez pour voir la période</p></div></div>
+    <div class="heat-scroll"><div class="heat-months" id="heatMonths"></div><div class="heat-wrap"><div class="heat-days"><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span><span>dim</span></div><div class="heat" id="heat"></div></div></div>
+    <div class="heat-legend"><span>faible</span><b style="background:var(--heat1)"></b><b style="background:var(--heat2)"></b><b style="background:var(--heat3)"></b><b style="background:var(--heat4)"></b><b style="background:var(--heat5)"></b><span>forte</span></div>
+  </section>
+
+  <div class="grid g2 mt">
+    <section class="card">
+      <div class="card-h"><div><h2>Comparer les années</h2><p class="sub">Production par saison (kWh)</p></div></div>
+      <div class="legend" id="yrLegend" style="margin-bottom:8px"></div>
+      <div class="chart sm"><canvas id="cYears"></canvas></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><div><h2>Météo et alarmes</h2><p class="sub" id="wxSub">Selon Aurora Vision</p></div><div id="evStatus"></div></div>
+      <div id="wx"></div>
+      <details class="more"><summary>Événements des onduleurs</summary><p class="note" id="evSub"></p><div class="tablewrap" style="margin-top:8px"><table id="evCodes"></table></div><div class="tablewrap" style="margin-top:8px"><table id="evRecent"></table></div></details>
+    </section>
   </div>
 </section>
 
-<div class="filters" data-view="dash">
-  <div class="wrap">
-    <div class="fbar" role="toolbar" aria-label="Filtres">
-      <span class="flabel">Période</span>
-      <div class="seg" id="presets">
-        <button data-p="7">7 j</button><button data-p="30" aria-pressed="true">30 j</button><button data-p="90">90 j</button>
-        <button data-p="365">12 mois</button><button data-p="ytd">Année</button><button data-p="all">Tout</button>
-      </div>
-      <div class="range">
-        <input type="date" id="dFrom" aria-label="Date de début"><span>→</span><input type="date" id="dTo" aria-label="Date de fin">
-      </div>
-      <span class="flabel">Pas</span>
-      <div class="seg" id="gran"><button data-g="day" aria-pressed="true">Jour</button><button data-g="week">Semaine</button><button data-g="month">Mois</button></div>
-      <span class="flabel">Onduleur</span>
-      <div class="seg" id="invSeg"><button data-i="all" aria-pressed="true">Tous</button><button data-i="PVS-100">PVS-100</button><button data-i="PVS-30">PVS-30</button></div>
-      <span class="spacer"></span>
-      <label class="toggle"><input type="checkbox" id="cmp"> Comparer N-1</label>
-      <label class="toggle"><input type="checkbox" id="exp"> Attendu</label>
-      <label class="toggle"><input type="checkbox" id="ma"> Moy. glissante</label>
-      <button class="chip" id="linkBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Lien</button>
-      <button class="chip" id="pdfBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z"/></svg>PDF</button>
-      <button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>CSV</button>
-    </div>
-  </div>
-</div>
-
-<main class="wrap" id="production">
-<div data-view="dash">
-  <div class="alert hidden" id="alert" role="status"></div>
-  <section class="kpis" id="kpis" aria-live="polite"></section>
-
-  <div class="grid g-2">
-    <section class="card reveal" id="mainCard">
+<!-- ================= FINANCES ================= -->
+<section data-view="fin" id="finances" class="hidden">
+  <div class="page-h"><div><h1>Finances</h1><p>Ce que l'installation a rapporté, où en est son remboursement et ce qu'elle devrait rapporter jusqu'en <span id="finEnd">2052</span>.</p></div></div>
+  <section class="card"><div class="big-answer" id="finHero"></div></section>
+  <div class="grid g4 mt" id="finKpis"></div>
+  <div class="grid g21 mt">
+    <section class="card">
       <div class="card-h">
-        <div><h2 id="mainTitle">Production</h2><p class="sub" id="mainSub"></p></div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div class="legend" id="mainLegend"></div>
-          <div class="mini-seg" id="mainMode"><button data-m="bars" aria-pressed="true">Barres</button><button data-m="cumul">Cumul</button><button data-m="table">Tableau</button></div>
-        </div>
+        <div><h2>Gain cumulé</h2><p class="sub">Revenus cumulés moins le coût de l'installation (CHF) · sous zéro = pas encore remboursée</p></div>
+        <div class="chips" id="fpRange"><button data-r="now">Jusqu'à aujourd'hui</button><button data-r="10" aria-pressed="true">10 ans</button><button data-r="all">Jusqu'en 2052</button></div>
       </div>
-      <div class="chart" id="mainChartBox"><canvas id="cMain"></canvas></div>
-      <div class="tablewrap hidden" id="mainTable"></div>
+      <div class="chart"><canvas id="cFinPos"></canvas></div>
     </section>
-
-    <section class="card reveal">
-      <div class="card-h"><div><h2>Records & performance</h2><p class="sub">Sur la période sélectionnée</p></div></div>
-      <div class="records" id="records"></div>
-      <div class="gauge">
-        <div class="lbl"><span>Productible annualisé</span><span class="num" id="gaugeTxt">–</span></div>
-        <div class="bar"><i id="gaugeBar"></i></div>
-        <div class="lbl" style="margin-top:6px;color:var(--muted);font-weight:500"><span>0</span><span>Repère : 1 100 kWh/kWc</span></div>
-      </div>
+    <section class="card">
+      <div class="card-h"><div><h2>Hypothèses</h2><p class="sub">Pour la projection · enregistrées dans ce navigateur</p></div></div>
+      <div class="seg" id="scen" style="margin-bottom:16px"><button data-s="prudent">Prudent</button><button data-s="base" aria-pressed="true">Base</button><button data-s="optimiste">Optimiste</button><button data-s="perso" disabled>Perso</button></div>
+      <div class="sliders" id="finSliders"></div>
     </section>
   </div>
-
-  <section class="card reveal" style="margin-top:16px" id="onduleurs">
+  <section class="card mt">
     <div class="card-h">
-      <div><h2>Onduleurs</h2><p class="sub" id="invSub">Répartition de la production sur la période · données Aurora Vision</p></div>
-      <div class="mini-seg" id="invMode"><button data-v="month" aria-pressed="true">Par mois</button><button data-v="share">Part en %</button></div>
+      <div><h2>Revenus par année</h2><p class="sub">CHF TTC · réel puis estimation</p></div>
+      <div class="ctl"><div class="chips" id="frRange"><button data-r="real">Réel</button><button data-r="10" aria-pressed="true">10 ans</button><button data-r="all">Jusqu'en 2052</button></div></div>
     </div>
-    <div class="inv-grid">
-      <div class="inv-cards" id="invCards"></div>
-      <div><div class="legend" style="margin-bottom:8px"><span><i style="background:var(--s1)"></i>PVS-100</span><span><i style="background:var(--s2)"></i>PVS-30</span></div>
-      <div class="chart sm"><canvas id="cInv"></canvas></div></div>
-    </div>
+    <div class="legend" style="margin-bottom:8px"><span><i style="background:var(--sun)"></i>Réel</span><span><i style="background:var(--sun-2)"></i>Année en cours</span><span><i style="background:var(--s1)"></i>Estimation</span></div>
+    <div class="chart sm"><canvas id="cFinRev"></canvas></div>
   </section>
 
-  <section class="card reveal" style="margin-top:16px">
-    <div class="card-h">
-      <div><h2>Calendrier de production</h2><p class="sub">Chaque case = un jour · intensité = kWh produits · survolez pour le détail</p></div>
-    </div>
-    <div class="heat-scroll">
-      <div class="heat-months" id="heatMonths"></div>
-      <div class="heat-wrap">
-        <div class="heat-days"><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span><span>dim</span></div>
-        <div class="heat" id="heat"></div>
-      </div>
-    </div>
-    <div class="heat-legend"><span>moins</span><b style="background:var(--heat0)"></b><b style="background:var(--heat1)"></b><b style="background:var(--heat2)"></b><b style="background:var(--heat3)"></b><b style="background:var(--heat4)"></b><b style="background:var(--heat5)"></b><span>plus</span>
-      <span style="margin-left:12px"><b class="c na" style="background:repeating-linear-gradient(45deg,var(--grid) 0 2px,transparent 2px 4px)"></b> pas de données en ligne</span></div>
-  </section>
-
-  <div class="grid g-2b" style="margin-top:16px">
-    <section class="card reveal">
-      <div class="card-h">
-        <div><h2>Courbe de la journée</h2><p class="sub" id="hourSub">Production heure par heure (kWh)</p></div>
-        <div class="mini-seg" id="hourDays"></div>
-      </div>
-      <div class="legend" style="margin-bottom:8px"><span><i style="background:var(--sun)"></i>Jour sélectionné</span><span><i class="ln" style="background:var(--s1)"></i>Moyenne 7 jours</span></div>
-      <div class="chart sm"><canvas id="cHour"></canvas></div>
-    </section>
-    <section class="card reveal">
-      <div class="card-h">
-        <div><h2>Comparaison des années</h2><p class="sub">Production par trimestre (kWh) · relevés de compteur + Aurora</p></div>
-      </div>
-      <div class="legend" id="yearLegend" style="margin-bottom:8px"></div>
-      <div class="chart sm"><canvas id="cYears"></canvas></div>
-    </section>
-  </div>
-
-  <div class="grid g-2" style="margin-top:16px" id="puissance">
-    <section class="card reveal">
-      <div class="card-h">
-        <div><h2>Puissance au quart d'heure</h2><p class="sub" id="pwSub">kW · 7 derniers jours</p></div>
-        <div class="mini-seg" id="pwDays"></div>
-      </div>
-      <div class="chart sm"><canvas id="cPow"></canvas></div>
-    </section>
-    <section class="card reveal">
-      <div class="card-h"><div><h2>Météo à Bulle</h2><p class="sub" id="wxSub">Selon Aurora Vision</p></div></div>
-      <div id="wx"></div>
-    </section>
-  </div>
-
-  <section class="card reveal" style="margin-top:16px" id="evenements">
-    <div class="card-h"><div><h2>Événements & alarmes</h2><p class="sub" id="evSub"></p></div><div id="evStatus"></div></div>
-    <div class="grid g-2b">
-      <div><div class="tablewrap"><table id="evCodes"></table></div></div>
-      <div><div class="tablewrap"><table id="evRecent"></table></div></div>
-    </div>
-  </section>
-
-  <section class="card reveal" style="margin-top:16px">
-    <div class="card-h"><div><h2>Historique depuis la mise en service</h2><p class="sub">Production par trimestre (kWh) · le trimestre en cours est estimé à partir d'Aurora Vision</p></div></div>
-    <div class="chart sm"><canvas id="cQuarter"></canvas></div>
-  </section>
-
-</div>
-  <section id="finances" class="fin" data-view="fin">
-    <div class="fin-head">
-      <div><h2 class="sect">Finances & projection</h2><p class="sub">Revenus, amortissement et projection jusqu'en <span id="finEnd">2052</span>. Ajustez les prix de reprise par trimestre : tout se recalcule instantanément.</p></div>
-      <div class="fin-tools">
-        <div class="seg" id="scen"><button data-s="prudent">Prudent</button><button data-s="base" aria-pressed="true">Base</button><button data-s="optimiste">Optimiste</button><button data-s="perso" disabled>Perso</button></div>
-        <button class="chip" id="finExport" type="button">Exporter</button>
-        <label class="chip" for="finImport" style="cursor:pointer">Importer<input type="file" id="finImport" accept="application/json" hidden></label>
-        <button class="chip" id="finReset" type="button">Réinitialiser</button>
-      </div>
-    </div>
-    <section class="kpis fin-kpis" id="finKpis"></section>
-    <div class="grid g-2">
+  <details class="adv" id="finAdv">
+    <summary>Réglages avancés <small>— prix de reprise trimestre par trimestre, investissement, onduleurs, horizon, tableau détaillé</small></summary>
+    <div class="grid g2 mt">
+      <section class="card"><div class="card-h"><div><h2>Investissement et charges</h2></div></div><div class="form" id="finForm"></div></section>
       <section class="card">
-        <div class="card-h"><div><h2>Bénéfice cumulé</h2><p class="sub">Cash-flow cumulé moins le coût net de l'installation (CHF) · sous zéro = pas encore amorti</p></div></div>
-        <div class="chart"><canvas id="cFinPos"></canvas></div>
-      </section>
-      <section class="card">
-        <div class="card-h"><div><h2>Hypothèses</h2><p class="sub">Enregistrées dans ce navigateur</p></div></div>
-        <div class="form" id="finForm"></div>
+        <div class="card-h"><div><h2>Sauvegarde</h2><p class="sub">Vos réglages sont gardés dans ce navigateur</p></div></div>
+        <div class="ctl"><button class="chip" id="finExport" type="button">Exporter les réglages</button>
+          <label class="chip" for="finImport" style="cursor:pointer">Importer<input type="file" id="finImport" accept="application/json" hidden></label>
+          <button class="chip" id="finReset" type="button">Réinitialiser</button></div>
       </section>
     </div>
-    <section class="card" style="margin-top:16px">
-      <div class="card-h"><div><h2>Revenus annuels</h2><p class="sub">CHF TTC · réel, année en cours et projection</p></div>
-        <div class="legend"><span><i style="background:var(--sun)"></i>Réel</span><span><i style="background:var(--sun-2)"></i>En cours</span><span><i style="background:var(--s1)"></i>Projeté</span></div></div>
-      <div class="chart sm"><canvas id="cFinRev"></canvas></div>
-    </section>
-    <section class="card" style="margin-top:16px">
+    <section class="card mt">
       <div class="card-h">
-        <div><h2>Prix de reprise par trimestre</h2><p class="sub">ct/kWh TTC · trimestres passés = prix réels issus des factures · trimestres futurs = vos hypothèses (cellule vide = prix par défaut du trimestre)</p></div>
-        <div class="legend"><span><i class="ln" style="background:var(--s1)"></i>Réel</span><span><i class="ln" style="background:var(--s2)"></i>Projeté</span></div>
+        <div><h2>Prix de reprise par trimestre (ct/kWh)</h2><p class="sub">Passé = prix réels de vos factures · futur = votre estimation (case vide = prix par défaut du trimestre)</p></div>
+        <div class="legend"><span><i class="ln" style="background:var(--s1)"></i>Réel</span><span><i class="ln" style="background:var(--s2)"></i>Estimé</span></div>
       </div>
-      <div class="chart sm"><canvas id="cFinPrice"></canvas></div>
-      <div class="price-bar">
-        <span class="flabel">Prix par défaut des trimestres futurs</span>
-        <div id="defPrices" class="defprices"></div>
-        <span class="spacer"></span>
-        <button class="chip" id="clearOverrides" type="button">Effacer les prix futurs saisis</button>
-        <button class="chip" id="showAllYears" type="button">Afficher toutes les années</button>
-      </div>
+      <div class="chart xs"><canvas id="cFinPrice"></canvas></div>
+      <div class="price-bar"><span class="flabel">Prix futur par défaut</span><div id="defPrices" class="defprices"></div><span class="spacer"></span>
+        <button class="chip" id="clearOverrides" type="button">Effacer les prix futurs saisis</button><button class="chip" id="showAllYears" type="button">Afficher toutes les années</button></div>
       <div class="tablewrap" style="max-height:none"><table class="ptable" id="priceTable"></table></div>
     </section>
-    <section class="card" style="margin-top:16px">
-      <div class="card-h"><div><h2>Tableau de projection annuel</h2><p class="sub">CHF TTC</p></div></div>
-      <div class="tablewrap" style="max-height:520px"><table id="finTable"></table></div>
-    </section>
-  </section>
-
-  <section class="card reveal aurora" style="margin-top:16px" data-view="dash">
-    <div class="card-h"><div><h2>Vue officielle Aurora Vision</h2><p class="sub">Affichage en direct de la plateforme FIMER, dès que le partage public est activé</p></div></div>
-    <div id="aurora"></div>
-  </section>
+    <section class="card mt"><div class="card-h"><div><h2>Tableau détaillé année par année</h2><p class="sub">CHF TTC</p></div></div><div class="tablewrap" style="max-height:520px"><table id="finTable"></table></div></section>
+  </details>
+</section>
 
   <!-- ================= SAISIE ================= -->
   <section data-view="saisie" class="view hidden" id="saisie">
@@ -677,7 +607,9 @@ body.noscroll{overflow:hidden}
     </section>
   </section>
 </main>
-
+<footer class="wrap" id="foot"></footer>
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="toast" id="toast" role="status"></div>
 <!-- panneau de saisie -->
 <div class="drawer-bg" id="drawerBg"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
@@ -743,10 +675,10 @@ body.noscroll{overflow:hidden}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
-<script src="entries.js?v=5"></script>
-<script src="app.js?v=5"></script>
-<script src="finance.js?v=5"></script>
-<script src="checks.js?v=5"></script>
-<script src="report.js?v=5"></script>
+<script src="entries.js?v=7"></script>
+<script src="app.js?v=7"></script>
+<script src="finance.js?v=7"></script>
+<script src="checks.js?v=7"></script>
+<script src="report.js?v=7"></script>
 </body>
 </html>

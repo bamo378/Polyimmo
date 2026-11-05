@@ -151,50 +151,81 @@ el('clearOverrides').onclick = () => { const M = model(); Object.keys(fin.overri
 el('showAllYears').onclick = () => { showAll = !showAll; el('showAllYears').textContent = showAll ? 'Masquer les années lointaines' : 'Afficher toutes les années'; renderTable(model()); };
 
 /* ---------- render ---------- */
+const RANGE = {fp:'10', fr:'10'};
+document.getElementById('fpRange').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { RANGE.fp = b.dataset.r; render(false); } });
+document.getElementById('frRange').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { RANGE.fr = b.dataset.r; render(false); } });
+const cut = (ys, r, cy) => ys.filter(Y => r === 'all' ? true : r === 'now' || r === 'real' ? Y.y <= cy : Y.y <= ys[0].y + 9);
+function sliders(M){
+  const box = el('finSliders'), nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2;
+  const defs = [
+    ['futureMultiplier', 'Prix de reprise futur', 0.5, 1.5, 0.05, v => nf0.format(v*100) + ' %', () => '≈ ' + nf2.format(model().futPrice) + ' ct/kWh en moyenne (100 % = derniers prix connus de chaque trimestre)'],
+    ['degradation', 'Baisse de production par an', 0, 0.015, 0.001, v => nf1.format(v*100) + ' %', () => 'Vieillissement des panneaux, souvent 0,3 à 0,7 % par an'],
+    ['charges', 'Charges par an', 0, 6000, 100, v => nf0.format(v) + ' CHF', () => 'Entretien, assurance, nettoyage… ' + (fin.a.charges ? '' : '— à renseigner pour un résultat réaliste')],
+  ];
+  if (!box.dataset.built) {
+    box.innerHTML = defs.map(([k,l,mn,mx,st]) => `<div class="sl"><label for="sl_${k}">${l}<b id="slv_${k}"></b></label><input type="range" id="sl_${k}" min="${mn}" max="${mx}" step="${st}"><div class="hint" id="slh_${k}"></div></div>`).join('');
+    defs.forEach(([k]) => el('sl_' + k).addEventListener('input', e => { fin.a[k] = +e.target.value; if (k !== 'charges') fin.scenario = 'perso'; save(); render(false); }));
+    box.dataset.built = 1;
+  }
+  defs.forEach(([k,,,,,fmt,hint]) => { const i = el('sl_' + k); if (document.activeElement !== i) i.value = fin.a[k]; el('slv_' + k).textContent = fmt(+fin.a[k]); el('slh_' + k).textContent = hint(); });
+}
 function render(withTable = true){
   if (!fin || !PI.DATA) return;
   const M = model(), nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2, css = PI.css;
   document.querySelectorAll('#scen button').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === fin.scenario));
+  document.querySelectorAll('#fpRange button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === RANGE.fp));
+  document.querySelectorAll('#frRange button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === RANGE.fr));
   el('finEnd').textContent = M.endY;
-  el('finCost').innerHTML = '<span>Coût net de l\'installation (TTC − subvention)</span><span class="num"></span>';
-  el('finCost').lastChild.textContent = nf0.format(M.cost) + ' CHF';
-  const last = M.ys[M.ys.length-1];
-  const pb = M.payback ? 'T' + M.payback.t + ' ' + M.payback.y : 'non atteint';
+  if (el('finCost')) { el('finCost').innerHTML = '<span>Coût net de l\'installation (TTC − subvention)</span><span class="num"></span>'; el('finCost').lastChild.textContent = nf0.format(M.cost) + ' CHF'; }
+  const last = M.ys[M.ys.length-1], pct = Math.min(1, M.revToDate / M.cost), rest = Math.max(0, M.cost - M.revToDate);
+  const pb = M.payback ? 'T' + M.payback.t + ' ' + M.payback.y : 'après ' + M.endY;
+  // réponse principale
+  el('finHero').innerHTML = `<div><span class="flabel">Remboursement de l'installation</span><h2>Votre installation est remboursée à ${nf0.format(pct*100)} %</h2>
+    <p class="sub" style="font-size:.95rem;margin-top:6px">Vous avez encaissé <b>${nf0.format(M.revToDate)} CHF</b> sur un coût net de <b>${nf0.format(M.cost)} CHF</b> (factures jusqu'au ${M.lastInv.replace('-T',' T').replace(/^(\d+) (T\d)$/,'$2 $1')}, indemnité comprise).</p>
+    <div class="bar"><i style="width:${pct*100}%"></i></div></div>
+    <div class="facts"><div class="fact"><span>Reste à rembourser</span><strong class="num">${nf0.format(rest)} CHF</strong></div>
+    <div class="fact"><span>Remboursé vers</span><strong>${pb}</strong></div>
+    <div class="fact"><span>Gain estimé en ${M.endY}</span><strong class="num">${nf0.format(last.pos)} CHF</strong></div></div>`;
+  // indicateurs
+  const cyQ = M.qs.filter(q => q.y === M.cy && q.status === 'réel'), cyRev = cyQ.reduce((a,q)=>a+q.rev+q.other,0), cyK = cyQ.reduce((a,q)=>a+q.kwh,0);
+  const allR = M.qs.filter(q => q.status === 'réel'), avgAll = allR.reduce((a,q)=>a+q.rev,0) / allR.reduce((a,q)=>a+q.kwh,0) * 100;
+  const help = t => `<span class="help" tabindex="0" data-tip="${t}">?</span>`;
   const items = [
-    ['Revenus encaissés', M.revToDate, v => nf0.format(v) + '<small>CHF</small>', 'factures jusqu\'au ' + M.lastInv.replace('-',' ') + ' (indemnité incluse)'],
-    ['Reste à amortir', Math.max(0, M.cost - M.revToDate), v => nf0.format(v) + '<small>CHF</small>', nf0.format(Math.min(100, M.revToDate/M.cost*100)) + ' % du coût net déjà couvert'],
-    ['Amortissement complet', 0, () => pb, M.payback ? 'selon les hypothèses actuelles' : 'avant ' + M.endY],
-    ['Bénéfice net ' + M.endY, last.pos, v => nf0.format(v) + '<small>CHF</small>', 'cash-flow cumulé − coût net'],
-    ['TRI sur ' + (M.endY - M.ys[0].y + 1) + ' ans', M.irr == null ? 0 : M.irr*100, v => M.irr == null ? '–' : nf1.format(v) + '<small>%</small>', 'taux de rentabilité interne'],
-    ['Prix moyen futur', M.futPrice, v => nf2.format(v) + '<small>ct/kWh</small>', 'pondéré par la production projetée'],
+    ['Revenus ' + M.cy + ' encaissés', cyRev, v => nf0.format(v) + '<small>CHF</small>', cyQ.length ? cyQ.length + ' trimestre(s) facturé(s)' : 'aucune facture saisie'],
+    ['Prix moyen ' + M.cy, cyK ? cyRev/cyK*100 : 0, v => nf2.format(v) + '<small>ct/kWh</small>', 'contre ' + nf2.format(avgAll) + ' ct/kWh en moyenne depuis 2023'],
+    ['Prix futur estimé ' + help('Prix moyen de reprise utilisé pour la projection, selon vos hypothèses.'), M.futPrice, v => nf2.format(v) + '<small>ct/kWh</small>', 'scénario « ' + fin.scenario + ' »'],
+    ['Rentabilité ' + help('Taux de rentabilité interne (TRI) : rendement annuel moyen de l’investissement sur toute la durée, comme un taux d’intérêt.'), M.irr == null ? 0 : M.irr*100, v => M.irr == null ? '–' : nf1.format(v) + '<small>% / an</small>', 'sur ' + (M.endY - M.ys[0].y + 1) + ' ans'],
   ];
-  const box = el('finKpis');
-  box.innerHTML = items.map((it,i) => `<div class="kpi"><div class="k">${it[0]}</div><div class="v num" id="fk${i}">–</div><div class="d">${it[3]}</div></div>`).join('');
+  el('finKpis').innerHTML = items.map((it,i) => `<div class="kpi"><div class="k">${it[0]}</div><div class="v num" id="fk${i}">–</div><div class="d">${it[3]}</div></div>`).join('');
   items.forEach((it,i) => PI.countUp(el('fk'+i), it[1], it[2], true));
-
-  const labels = M.ys.map(Y => String(Y.y));
-  const good = css('--good'), bad = '#dc2626';
-  PI.makeChart('cFinPos', {type:'line', data:{labels, datasets:[{label:'Bénéfice cumulé', data:M.ys.map(Y => Math.round(Y.pos)),
-    borderColor: css('--ink'), borderWidth:2.2, pointRadius:0, pointHoverRadius:5, tension:.25,
-    fill:{target:'origin', above: good + '33', below: bad + '2a'},
-    segment:{borderDash: ctx => M.ys[ctx.p1DataIndex] && M.ys[ctx.p1DataIndex].status === 'projeté' ? [5,4] : []}}]},
-    options: PI.baseOpts('CHF', o => { o.scales.y.beginAtZero = false; o.scales.y.grid.color = c => c.tick.value === 0 ? css('--muted') : css('--grid'); })});
-  PI.makeChart('cFinRev', {type:'bar', data:{labels, datasets:[{label:'Revenus', data:M.ys.map(Y => Math.round(Y.rev + Y.other)),
-    backgroundColor: M.ys.map(Y => Y.status === 'réel' ? css('--sun') : Y.status === 'en cours' ? css('--sun-2') : css('--s1')),
-    borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', maxBarThickness:28}]}, options: PI.baseOpts('CHF')});
-  const ql = M.qs.map(q => q.t === 1 ? String(q.y) : 'T' + q.t + ' ' + q.y);
+  sliders(M);
+  // gain cumulé
+  const yp = cut(M.ys, RANGE.fp, M.cy), good = css('--good'), bad = css('--bad');
+  PI.makeChart('cFinPos', {type:'line', data:{labels:yp.map(Y => String(Y.y)), datasets:[{label:'Gain cumulé', data:yp.map(Y => Math.round(Y.pos)),
+    borderColor: css('--ink'), borderWidth:2.4, pointRadius: yp.length > 15 ? 0 : 3, pointHoverRadius:5, tension:.25,
+    fill:{target:'origin', above: good + '30', below: bad + '26'},
+    segment:{borderDash: ctx => yp[ctx.p1DataIndex] && yp[ctx.p1DataIndex].status === 'projeté' ? [5,4] : []}}]},
+    options: PI.baseOpts('CHF', o => { o.scales.y.beginAtZero = false; o.scales.y.grid.color = c => c.tick.value === 0 ? css('--muted') : css('--grid');
+      o.plugins.tooltip.callbacks.afterBody = it => { const Y = yp[it[0].dataIndex]; return [Y.status === 'projeté' ? 'Estimation' : Y.status === 'en cours' ? 'Année en cours (en partie estimée)' : 'Réel', 'Revenus de l\'année : ' + nf0.format(Y.rev + Y.other) + ' CHF']; }; })});
+  const yr = cut(M.ys, RANGE.fr, M.cy);
+  PI.makeChart('cFinRev', {type:'bar', data:{labels:yr.map(Y => String(Y.y)), datasets:[{label:'Revenus', data:yr.map(Y => Math.round(Y.rev + Y.other)),
+    backgroundColor: yr.map(Y => Y.status === 'réel' ? css('--sun') : Y.status === 'en cours' ? css('--sun-2') : css('--s1')),
+    borderRadius:{topLeft:5,topRight:5}, borderSkipped:'bottom', maxBarThickness:40}]},
+    options: PI.baseOpts('CHF', o => { o.plugins.tooltip.callbacks.afterBody = it => { const Y = yr[it[0].dataIndex]; return [nf0.format(Y.kwh) + ' kWh · ' + nf2.format(Y.price) + ' ct/kWh', Y.status === 'réel' ? 'Réel (factures)' : Y.status === 'en cours' ? 'En cours : factures + estimation' : 'Estimation']; }; })});
+  // prix par trimestre (réglages avancés)
   const real = M.qs.map(q => q.status === 'réel' ? +q.price.toFixed(3) : null);
   const iLast = M.qs.findIndex(q => q.status !== 'réel');
   const proj = M.qs.map((q,i) => (q.status !== 'réel' || i === iLast - 1) ? +q.price.toFixed(3) : null);
   PI.makeChart('cFinPrice', {type:'line', data:{labels: M.qs.map(q => 'T' + q.t + ' ' + q.y), datasets:[
     {label:'Réel', data:real, borderColor:css('--s1'), backgroundColor:css('--s1'), borderWidth:2, pointRadius:3, tension:.2},
-    {label:'Projeté', data:proj, borderColor:css('--s2'), backgroundColor:css('--s2'), borderWidth:2, borderDash:[5,4], pointRadius: M.qs.length > 60 ? 0 : 2, pointHoverRadius:4, tension:.2}]},
+    {label:'Estimé', data:proj, borderColor:css('--s2'), backgroundColor:css('--s2'), borderWidth:2, borderDash:[5,4], pointRadius: M.qs.length > 60 ? 0 : 2, pointHoverRadius:4, tension:.2}]},
     options: PI.baseOpts('ct', o => { o.scales.y.ticks.callback = v => nf1.format(v); o.scales.x.ticks.callback = function(v){ const l = this.getLabelForValue(v); if (!l.startsWith('T1')) return ''; const y = +l.slice(3), step = this.chart.width < 500 ? 5 : this.chart.width < 900 ? 2 : 1; return y % step === 0 ? String(y) : ''; }; o.scales.x.ticks.autoSkip = false; })});
   if (withTable) renderTable(M); else updateTablePlaceholders(M);
   renderYearTable(M);
+  document.dispatchEvent(new CustomEvent('pi:fin'));
 }
 PI.finRender = () => render();
-PI.finModel = () => model();
+PI.finModel = () => (fin && DEF && PI.DATA) ? model() : null;
 
 function renderTable(M){
   const t = el('priceTable'); t.replaceChildren();
