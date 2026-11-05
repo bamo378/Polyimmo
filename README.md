@@ -20,3 +20,12 @@ Site en ligne : https://bamo378.github.io/polyimmo/
 et les relevés de compteur trimestriels (depuis 2023). Le site lit ce fichier et calcule tout le reste.
 Pour mettre à jour : demander à Claude de récupérer les nouvelles données Aurora Vision (via Chrome),
 ou remplacer le fichier.
+
+## Structure
+
+- `index.html` : mise en page et styles
+- `app.js` : tableau de bord (filtres, graphiques, onduleurs, calendrier, puissance, météo, événements)
+- `finance.js` : module financier (prix de reprise par trimestre, projection, amortissement, TRI)
+- `data/production.json` : données de production (Aurora Vision + relevés de compteur)
+- `data/finance.json` : valeurs financières par défaut (investissement, factures). Les réglages faits
+  dans le site sont enregistrés dans le navigateur (exportables / importables en JSON).

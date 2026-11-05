@@ -1,0 +1,53 @@
+{
+ "note": "Valeurs par défaut issues du fichier de suivi PolyImmo (montants encaissés TTC). Modifiables dans le site ; les changements restent dans votre navigateur.",
+ "invest": {
+  "ht": 199000,
+  "tva": 0.077,
+  "subsidy": 111366
+ },
+ "revenueActual": {
+  "2023-T2": 4434.99,
+  "2023-T3": 9003.41,
+  "2023-T4": 2770.06,
+  "2024-T1": 3516.35,
+  "2024-T2": 8235.6,
+  "2024-T3": 8556.85,
+  "2024-T4": 2571.58,
+  "2025-T1": 3082.9,
+  "2025-T2": 5459.8,
+  "2025-T3": 4598.63,
+  "2025-T4": 1647.4,
+  "2026-T1": 2719.6,
+  "2026-T2": 2939.4,
+  "2026-T3": 6150.85
+ },
+ "otherRevenue": {
+  "2023-T4": 3000
+ },
+ "pricesActual": {
+  "2023-T2": 13.152,
+  "2023-T3": 13.235,
+  "2023-T4": 13.149,
+  "2024-T1": 13.218,
+  "2024-T2": 13.263,
+  "2024-T3": 13.265,
+  "2024-T4": 13.191,
+  "2025-T1": 11.192,
+  "2025-T2": 7.426,
+  "2025-T3": 7.42,
+  "2025-T4": 10.133,
+  "2026-T1": 11.041,
+  "2026-T2": 4.158,
+  "2026-T3": 9.176
+ },
+ "assumptions": {
+  "degradation": 0.005,
+  "priceGrowth": 0,
+  "futureMultiplier": 1,
+  "charges": 0,
+  "chargesGrowth": 0.01,
+  "inverterYear": null,
+  "inverterCost": 0,
+  "endYear": 2052
+ }
+}

@@ -191,6 +191,81 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 @media (max-width:520px){.hs strong{font-size:1.05rem}.hs{padding:11px}}
+
+/* ---------- v3 additions ---------- */
+.grid > *{min-width:0}
+.nav{display:flex;gap:4px;margin-left:auto;margin-right:8px}
+.nav a{color:#d7d2d6;text-decoration:none;font-size:.84rem;font-weight:700;padding:8px 10px;border-radius:10px}
+.nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+@media (max-width:860px){.nav{display:none}}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi.warn{border-color:color-mix(in srgb,#dc2626 45%,var(--line))}
+.alert{display:flex;gap:10px;align-items:center;background:color-mix(in srgb,#dc2626 10%,var(--surface));border:1px solid color-mix(in srgb,#dc2626 35%,var(--line));
+  color:var(--ink);border-radius:14px;padding:10px 14px;font-size:.88rem;margin:6px 0 4px}
+.alert b{color:#dc2626}
+.inv-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.inv-grid{grid-template-columns:1fr}}
+.inv-cards{display:grid;gap:10px}
+.inv{border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:12px 14px;position:relative;overflow:hidden}
+.inv::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.inv .t{display:flex;justify-content:space-between;font-size:.8rem;font-weight:800}
+.inv .t span{color:var(--muted);font-weight:600}
+.inv strong{display:block;font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.inv .bar{height:6px;border-radius:99px;background:var(--grid);margin-top:8px;overflow:hidden}
+.inv .bar i{display:block;height:100%;background:var(--c);border-radius:99px;transition:width .8s}
+.inv em{font-style:normal;font-size:.76rem;color:var(--ink-2)}
+.wx-now{display:flex;align-items:center;gap:14px;padding:6px 0 14px;border-bottom:1px solid var(--line)}
+.wx-now .ic{font-size:2.4rem;line-height:1}
+.wx-now strong{font-size:1.8rem;font-weight:800;letter-spacing:-.03em}
+.wx-days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.wx-d{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;font-size:.8rem}
+.wx-d .ic{font-size:1.4rem;display:block}
+.wx-d b{display:block;font-size:.86rem}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:800;padding:5px 10px;border-radius:99px;
+  background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.sev{display:inline-block;font-size:.7rem;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
+.sev.moyenne{border-color:color-mix(in srgb,#d97706 50%,var(--line))}
+td.l,th.l{text-align:left}
+/* finance */
+.fin{margin-top:28px;scroll-margin-top:90px}
+.fin-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+h2.sect{font-size:clamp(1.4rem,2.6vw,1.9rem);letter-spacing:-.03em;margin:0}
+.fin-head .sub{color:var(--muted);margin:4px 0 0;font-size:.88rem;max-width:640px}
+.fin-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg button:disabled{opacity:.55;cursor:default}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media (max-width:520px){.form{grid-template-columns:1fr}}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:.76rem;font-weight:700;color:var(--ink-2)}
+.form input{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px 10px;width:100%}
+.form input:focus,.ptable input:focus,.defprices input:focus{outline:2px solid var(--brand);outline-offset:1px}
+.form .calc{grid-column:1/-1;display:flex;justify-content:space-between;background:var(--sun-soft);border-radius:10px;padding:9px 12px;font-size:.86rem;font-weight:700}
+.form .hint{grid-column:1/-1;font-size:.74rem;color:var(--muted);margin:-4px 0 0}
+.price-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+.defprices{display:flex;gap:6px;flex-wrap:wrap}
+.defprices label{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:800;color:var(--ink-2)}
+.defprices input,.ptable input{font:inherit;font-size:.84rem;font-weight:700;width:72px;text-align:right;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:8px;padding:5px 7px}
+.ptable td{padding:5px 8px}
+.ptable td.past input{background:transparent;border-color:transparent;color:var(--ink)}
+.ptable td.past input:hover{border-color:var(--line)}
+.ptable td.cur input{border-color:var(--sun)}
+.ptable input.ov{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface))}
+.ptable input::placeholder{color:var(--muted);font-weight:600}
+.ptable tr.yr-hidden{display:none}
+tr.proj td{color:var(--ink-2)}
+tr.cur td{background:color-mix(in srgb,var(--sun) 8%,transparent)}
+td.neg{color:#dc2626} td.pos{color:var(--good)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;font-weight:700;
+  opacity:0;transition:opacity .2s,transform .2s;z-index:60;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media print{
+  .filters,.tools,.nav,.fin-tools,.price-bar .chip,#mainMode,#invMode,#pwDays,#hourDays{display:none!important}
+  body{background:#fff}
+  .hero{padding:16px 0 20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card,.kpi{box-shadow:none;break-inside:avoid}
+  .reveal{opacity:1!important;transform:none!important}
+  .grid,.g-2,.g-2b{grid-template-columns:1fr 1fr}
+  .aurora{display:none}
+}
 </style>
 </head>
 <body>
@@ -203,6 +278,7 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
         <span id="logoText" class="hidden">PolyImmo<small>Solaire</small></span>
         <span class="tagline">Énergie solaire</span>
       </a>
+      <nav class="nav" aria-label="Sections"><a href="#production">Production</a><a href="#onduleurs">Onduleurs</a><a href="#puissance">Puissance</a><a href="#evenements">Événements</a><a href="#finances">Finances</a></nav>
       <div class="tools">
         <button class="iconbtn" id="themeBtn" type="button" aria-label="Changer de thème">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Thème</span>
@@ -237,14 +313,21 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
       </div>
       <span class="flabel">Pas</span>
       <div class="seg" id="gran"><button data-g="day" aria-pressed="true">Jour</button><button data-g="week">Semaine</button><button data-g="month">Mois</button></div>
+      <span class="flabel">Onduleur</span>
+      <div class="seg" id="invSeg"><button data-i="all" aria-pressed="true">Tous</button><button data-i="PVS-100">PVS-100</button><button data-i="PVS-30">PVS-30</button></div>
       <span class="spacer"></span>
       <label class="toggle"><input type="checkbox" id="cmp"> Comparer N-1</label>
+      <label class="toggle"><input type="checkbox" id="exp"> Attendu</label>
+      <label class="toggle"><input type="checkbox" id="ma"> Moy. glissante</label>
+      <button class="chip" id="linkBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Lien</button>
+      <button class="chip" id="pdfBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z"/></svg>PDF</button>
       <button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>CSV</button>
     </div>
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="production">
+  <div class="alert hidden" id="alert" role="status"></div>
   <section class="kpis" id="kpis" aria-live="polite"></section>
 
   <div class="grid g-2">
@@ -270,6 +353,18 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
       </div>
     </section>
   </div>
+
+  <section class="card reveal" style="margin-top:16px" id="onduleurs">
+    <div class="card-h">
+      <div><h2>Onduleurs</h2><p class="sub" id="invSub">Répartition de la production sur la période · données Aurora Vision</p></div>
+      <div class="mini-seg" id="invMode"><button data-v="month" aria-pressed="true">Par mois</button><button data-v="share">Part en %</button></div>
+    </div>
+    <div class="inv-grid">
+      <div class="inv-cards" id="invCards"></div>
+      <div><div class="legend" style="margin-bottom:8px"><span><i style="background:var(--s1)"></i>PVS-100</span><span><i style="background:var(--s2)"></i>PVS-30</span></div>
+      <div class="chart sm"><canvas id="cInv"></canvas></div></div>
+    </div>
+  </section>
 
   <section class="card reveal" style="margin-top:16px">
     <div class="card-h">
@@ -304,9 +399,78 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
     </section>
   </div>
 
+  <div class="grid g-2" style="margin-top:16px" id="puissance">
+    <section class="card reveal">
+      <div class="card-h">
+        <div><h2>Puissance au quart d'heure</h2><p class="sub" id="pwSub">kW · 7 derniers jours</p></div>
+        <div class="mini-seg" id="pwDays"></div>
+      </div>
+      <div class="chart sm"><canvas id="cPow"></canvas></div>
+    </section>
+    <section class="card reveal">
+      <div class="card-h"><div><h2>Météo à Bulle</h2><p class="sub" id="wxSub">Selon Aurora Vision</p></div></div>
+      <div id="wx"></div>
+    </section>
+  </div>
+
+  <section class="card reveal" style="margin-top:16px" id="evenements">
+    <div class="card-h"><div><h2>Événements & alarmes</h2><p class="sub" id="evSub"></p></div><div id="evStatus"></div></div>
+    <div class="grid g-2b">
+      <div><div class="tablewrap"><table id="evCodes"></table></div></div>
+      <div><div class="tablewrap"><table id="evRecent"></table></div></div>
+    </div>
+  </section>
+
   <section class="card reveal" style="margin-top:16px">
     <div class="card-h"><div><h2>Historique depuis la mise en service</h2><p class="sub">Production par trimestre (kWh) · le trimestre en cours est estimé à partir d'Aurora Vision</p></div></div>
     <div class="chart sm"><canvas id="cQuarter"></canvas></div>
+  </section>
+
+  <section id="finances" class="fin">
+    <div class="fin-head">
+      <div><h2 class="sect">Finances & projection</h2><p class="sub">Revenus, amortissement et projection jusqu'en <span id="finEnd">2052</span>. Ajustez les prix de reprise par trimestre : tout se recalcule instantanément.</p></div>
+      <div class="fin-tools">
+        <div class="seg" id="scen"><button data-s="prudent">Prudent</button><button data-s="base" aria-pressed="true">Base</button><button data-s="optimiste">Optimiste</button><button data-s="perso" disabled>Perso</button></div>
+        <button class="chip" id="finExport" type="button">Exporter</button>
+        <label class="chip" for="finImport" style="cursor:pointer">Importer<input type="file" id="finImport" accept="application/json" hidden></label>
+        <button class="chip" id="finReset" type="button">Réinitialiser</button>
+      </div>
+    </div>
+    <section class="kpis fin-kpis" id="finKpis"></section>
+    <div class="grid g-2">
+      <section class="card">
+        <div class="card-h"><div><h2>Bénéfice cumulé</h2><p class="sub">Cash-flow cumulé moins le coût net de l'installation (CHF) · sous zéro = pas encore amorti</p></div></div>
+        <div class="chart"><canvas id="cFinPos"></canvas></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><div><h2>Hypothèses</h2><p class="sub">Enregistrées dans ce navigateur</p></div></div>
+        <div class="form" id="finForm"></div>
+      </section>
+    </div>
+    <section class="card" style="margin-top:16px">
+      <div class="card-h"><div><h2>Revenus annuels</h2><p class="sub">CHF TTC · réel, année en cours et projection</p></div>
+        <div class="legend"><span><i style="background:var(--sun)"></i>Réel</span><span><i style="background:var(--sun-2)"></i>En cours</span><span><i style="background:var(--s1)"></i>Projeté</span></div></div>
+      <div class="chart sm"><canvas id="cFinRev"></canvas></div>
+    </section>
+    <section class="card" style="margin-top:16px">
+      <div class="card-h">
+        <div><h2>Prix de reprise par trimestre</h2><p class="sub">ct/kWh TTC · trimestres passés = prix réels issus des factures · trimestres futurs = vos hypothèses (cellule vide = prix par défaut du trimestre)</p></div>
+        <div class="legend"><span><i class="ln" style="background:var(--s1)"></i>Réel</span><span><i class="ln" style="background:var(--s2)"></i>Projeté</span></div>
+      </div>
+      <div class="chart sm"><canvas id="cFinPrice"></canvas></div>
+      <div class="price-bar">
+        <span class="flabel">Prix par défaut des trimestres futurs</span>
+        <div id="defPrices" class="defprices"></div>
+        <span class="spacer"></span>
+        <button class="chip" id="clearOverrides" type="button">Effacer les prix futurs saisis</button>
+        <button class="chip" id="showAllYears" type="button">Afficher toutes les années</button>
+      </div>
+      <div class="tablewrap" style="max-height:none"><table class="ptable" id="priceTable"></table></div>
+    </section>
+    <section class="card" style="margin-top:16px">
+      <div class="card-h"><div><h2>Tableau de projection annuel</h2><p class="sub">CHF TTC</p></div></div>
+      <div class="tablewrap" style="max-height:520px"><table id="finTable"></table></div>
+    </section>
   </section>
 
   <section class="card reveal aurora" style="margin-top:16px">
@@ -317,361 +481,9 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
 
 <footer class="wrap" id="foot"></footer>
 <div class="tip" id="tip" role="tooltip"></div>
+<div class="toast" id="toast" role="status"></div>
 
-<script>
-/* URL publique Aurora Vision (Plant Viewer / KIOSK) — à coller quand le partage est actif */
-const AURORA_PUBLIC_URL = "";
-
-const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
-const JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
-const nf0 = new Intl.NumberFormat('fr-CH',{maximumFractionDigits:0});
-const nf1 = new Intl.NumberFormat('fr-CH',{minimumFractionDigits:1,maximumFractionDigits:1});
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const D = s => new Date(s + 'T12:00:00');
-const iso = d => d.toLocaleDateString('sv-SE');
-const addDays = (s,n) => { const d = D(s); d.setDate(d.getDate()+n); return iso(d); };
-const fmtDate = s => { const d = D(s); return d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear(); };
-const fmtE = kwh => kwh >= 10000 ? nf1.format(kwh/1000) + ' MWh' : nf0.format(kwh) + ' kWh';
-
-let DATA, DAY = {}, FIRST, LAST, state = {from:null,to:null,preset:'30',gran:'day',cmp:false,mode:'bars',hourDay:null};
-const charts = {};
-
-/* ---------- theme ---------- */
-const themeBtn = document.getElementById('themeBtn');
-try { const t = localStorage.getItem('pi-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e){}
-themeBtn.onclick = () => {
-  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark'
-             : matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.dataset.theme = dark ? 'light' : 'dark';
-  try { localStorage.setItem('pi-theme', document.documentElement.dataset.theme); } catch(e){}
-  renderAll(true);
-};
-
-/* ---------- data ---------- */
-fetch('data/production.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
-  DATA = d;
-  d.daily.forEach(([k,v]) => { if (k < d.updated) DAY[k] = v; });   // exclure le jour partiel
-  const keys = Object.keys(DAY).sort(); FIRST = keys[0]; LAST = keys[keys.length-1];
-  document.getElementById('dFrom').min = document.getElementById('dTo').min = FIRST;
-  document.getElementById('dFrom').max = document.getElementById('dTo').max = LAST;
-  applyPreset('30');
-  hero(); heatmap(); hourly(); years(); quarters(); aurora();
-  document.getElementById('updatedTxt').textContent = 'Mis à jour le ' + fmtDate(d.updated) + ' · Aurora Vision';
-  document.getElementById('foot').textContent = 'Sources : Aurora Vision / FIMER (production journalière depuis le ' + fmtDate(FIRST) +
-    ', horaire sur 7 jours) et relevés de compteur trimestriels depuis 2023. Équivalence ménage : 4 500 kWh/an (hypothèse).';
-  observe();
-}).catch(err => { document.getElementById('kpis').textContent = 'Données indisponibles.'; console.error(err); });
-
-/* ---------- quarters (meter + aurora) ---------- */
-function quarterMap(){
-  const q = {...DATA.meterQuarters}, live = new Set(), aq = {};
-  DATA.daily.forEach(([k,v]) => { const key = k.slice(0,4)+'-T'+(Math.floor((+k.slice(5,7)-1)/3)+1); aq[key]=(aq[key]||0)+v; });
-  Object.keys(aq).forEach(k => { if (!(k in q)) { q[k] = aq[k]; live.add(k); } });
-  return {q, live};
-}
-
-/* ---------- hero ---------- */
-function hero(){
-  const {q} = quarterMap();
-  const total = Object.values(q).reduce((a,b)=>a+b,0);
-  const yy = LAST.slice(0,4);
-  const year = Object.entries(q).filter(([k])=>k.startsWith(yy)).reduce((a,[,v])=>a+v,0);
-  countUp(document.getElementById('hTotal'), total/1000, v => nf1.format(v) + ' MWh');
-  countUp(document.getElementById('hYear'), year/1000, v => nf1.format(v) + ' MWh');
-  countUp(document.getElementById('hYday'), DAY[LAST], v => nf0.format(v) + ' kWh');
-  document.getElementById('hYearSub').textContent = yy + ' à ce jour';
-  document.getElementById('hYdaySub').textContent = fmtDate(LAST);
-}
-function countUp(el, target, fmt){
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(target); return; }
-  const t0 = performance.now(), dur = 1100;
-  const step = t => { const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3); el.textContent = fmt(target*e); if (p<1) requestAnimationFrame(step); };
-  requestAnimationFrame(step);
-}
-
-/* ---------- filters ---------- */
-function applyPreset(p){
-  state.preset = p;
-  let from;
-  if (p === 'all') from = FIRST;
-  else if (p === 'ytd') from = LAST.slice(0,4) + '-01-01';
-  else from = addDays(LAST, -(+p) + 1);
-  if (from < FIRST) from = FIRST;
-  state.from = from; state.to = LAST;
-  if (p === '7' || p === '30') state.gran = 'day';
-  else if (p === '90' && state.gran === 'month') state.gran = 'week';
-  else if ((p === '365' || p === 'all' || p === 'ytd') && state.gran === 'day') state.gran = 'week';
-  syncControls(); renderAll();
-}
-function syncControls(){
-  document.querySelectorAll('#presets button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === state.preset));
-  document.querySelectorAll('#gran button').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === state.gran));
-  document.querySelectorAll('#mainMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === state.mode));
-  document.getElementById('dFrom').value = state.from; document.getElementById('dTo').value = state.to;
-  document.getElementById('cmp').checked = state.cmp;
-}
-document.getElementById('presets').onclick = e => { const b = e.target.closest('button'); if (b) applyPreset(b.dataset.p); };
-document.getElementById('gran').onclick = e => { const b = e.target.closest('button'); if (b) { state.gran = b.dataset.g; syncControls(); renderAll(); } };
-document.getElementById('mainMode').onclick = e => { const b = e.target.closest('button'); if (b) { state.mode = b.dataset.m; syncControls(); renderMain(); } };
-document.getElementById('cmp').onchange = e => { state.cmp = e.target.checked; renderAll(); };
-['dFrom','dTo'].forEach(id => document.getElementById(id).onchange = () => {
-  let f = document.getElementById('dFrom').value || FIRST, t = document.getElementById('dTo').value || LAST;
-  if (f > t) [f,t] = [t,f];
-  state.from = f < FIRST ? FIRST : f; state.to = t > LAST ? LAST : t; state.preset = null; syncControls(); renderAll();
-});
-document.getElementById('csvBtn').onclick = () => {
-  const rows = [['date','production_kwh']].concat(daysIn(state.from,state.to).map(k => [k, DAY[k]]));
-  const blob = new Blob([rows.map(r=>r.join(';')).join('\n')], {type:'text/csv'});
-  const a = Object.assign(document.createElement('a'), {href:URL.createObjectURL(blob), download:`polyimmo_production_${state.from}_${state.to}.csv`});
-  document.body.appendChild(a); a.click(); a.remove();
-};
-
-/* ---------- aggregation ---------- */
-function daysIn(f,t){ const out=[]; for (let k=f; k<=t; k=addDays(k,1)) if (k in DAY) out.push(k); return out; }
-function bucketKey(k,g){
-  if (g === 'day') return k;
-  if (g === 'month') return k.slice(0,7);
-  const d = D(k); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd); return iso(d);   // lundi
-}
-function bucketLabel(b,g){
-  if (g === 'day') { const d = D(b); return d.getDate()+' '+MOIS[d.getMonth()]; }
-  if (g === 'month') return MOIS[+b.slice(5,7)-1]+' '+b.slice(2,4);
-  const d = D(b); return 'sem. '+d.getDate()+' '+MOIS[d.getMonth()];
-}
-function aggregate(f,t,g){
-  const m = new Map();
-  daysIn(f,t).forEach(k => { const b = bucketKey(k,g); m.set(b,(m.get(b)||0)+DAY[k]); });
-  return [...m.entries()];
-}
-const prevYear = k => { const d = D(k); d.setFullYear(d.getFullYear()-1); return iso(d); };
-
-/* ---------- render ---------- */
-function renderAll(themeChange){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('loading'));
-  requestAnimationFrame(()=>{
-    renderKpis(); renderMain(); renderRecords();
-    if (themeChange) { heatmap(); hourly(); years(); quarters(); }
-    document.querySelectorAll('.card').forEach(c=>c.classList.remove('loading'));
-  });
-}
-
-function stats(f,t){
-  const ks = daysIn(f,t), vals = ks.map(k=>DAY[k]);
-  const total = vals.reduce((a,b)=>a+b,0);
-  let best = ks[0]; ks.forEach(k => { if (DAY[k] > DAY[best]) best = k; });
-  return {ks, total, n:ks.length, avg: ks.length ? total/ks.length : 0, best};
-}
-
-function renderKpis(){
-  const s = stats(state.from, state.to), kwp = DATA.plant.kwp;
-  const len = s.n, pf = addDays(state.from,-len), pt = addDays(state.from,-1);
-  const p = stats(pf < FIRST ? FIRST : pf, pt);
-  const comparable = pf >= FIRST && p.n === len;
-  const delta = comparable && p.total ? (s.total/p.total - 1) : null;
-  const homes = s.n ? s.total / (4500 * s.n / 365) : 0;
-  const ic = {
-    bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
-    avg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 17l6-6 4 4 8-8"/></svg>',
-    star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7 7 .6-5.3 4.6 1.6 7.1L12 17.8 5.7 21.3l1.6-7.1L2 9.6 9 9z"/></svg>',
-    panel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M3 11h18M9 5v12M15 5v12M12 17v3"/></svg>',
-    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 11l9-7 9 7v9H3z"/></svg>'
-  };
-  const items = [
-    ['bolt','Production', s.total, v => fmtE(v), delta === null ? 'du ' + fmtDate(state.from) + ' au ' + fmtDate(state.to)
-       : `<span class="delta ${delta>=0?'up':'down'}">${delta>=0?'▲':'▼'} ${nf1.format(Math.abs(delta*100))} %</span> vs période précédente`],
-    ['avg','Moyenne par jour', s.avg, v => nf0.format(v) + '<small>kWh</small>', s.n + ' jours'],
-    ['star','Meilleur jour', s.n ? DAY[s.best] : 0, v => nf0.format(v) + '<small>kWh</small>', s.n ? fmtDate(s.best) : '–'],
-    ['panel','Productible', s.total/kwp, v => nf1.format(v) + '<small>kWh/kWc</small>', 'sur la période · ' + nf1.format(kwp) + ' kWc'],
-    ['home','Équivalent ménages', homes, v => nf0.format(v), 'consommation couverte sur la période'],
-  ];
-  const box = document.getElementById('kpis');
-  box.innerHTML = items.map((it,i) => `<div class="kpi"><div class="k"><i>${ic[it[0]]}</i>${it[1]}</div><div class="v num" id="kv${i}">–</div><div class="d">${it[4]}</div></div>`).join('');
-  items.forEach((it,i) => { const el = document.getElementById('kv'+i); const t0 = performance.now();
-    const run = t => { const p = Math.min(1,(t-t0)/900), e = 1-Math.pow(1-p,3); el.innerHTML = it[3](it[2]*e); if (p<1) requestAnimationFrame(run); };
-    requestAnimationFrame(run); });
-}
-
-function baseOpts(unit){
-  const grid = css('--grid'), muted = css('--muted');
-  return {
-    responsive:true, maintainAspectRatio:false, animation:{duration:650,easing:'easeOutCubic'},
-    interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:false},
-      tooltip:{backgroundColor:css('--ink'),titleColor:css('--bg'),bodyColor:css('--bg'),padding:10,cornerRadius:10,displayColors:true,boxWidth:12,boxHeight:3,
-        titleFont:{weight:'700'},bodyFont:{weight:'600'},
-        callbacks:{label:c => ' ' + (c.parsed.y==null?'–':nf0.format(c.parsed.y)) + ' ' + unit + '  ' + (c.dataset.label||'')}}},
-    scales:{
-      x:{grid:{display:false},border:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true,autoSkipPadding:14,font:{size:11}}},
-      y:{grid:{color:grid},border:{display:false},beginAtZero:true,ticks:{color:muted,font:{size:11},callback:v=>nf0.format(v)}}
-    }
-  };
-}
-function makeChart(id, cfg){ if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); return charts[id]; }
-
-function renderMain(){
-  const g = state.gran, agg = aggregate(state.from, state.to, g);
-  const labels = agg.map(([b]) => bucketLabel(b,g));
-  let vals = agg.map(([,v]) => Math.round(v));
-  let prev = null;
-  if (state.cmp) {
-    prev = agg.map(([b]) => {
-      // somme N-1 des mêmes jours
-      let sum = 0, ok = false;
-      daysIn(state.from,state.to).filter(k => bucketKey(k,g) === b).forEach(k => { const pk = prevYear(k); if (pk in DAY) { sum += DAY[pk]; ok = true; } });
-      return ok ? Math.round(sum) : null;
-    });
-  }
-  const gLabel = {day:'par jour',week:'par semaine',month:'par mois'}[g];
-  document.getElementById('mainTitle').textContent = state.mode === 'cumul' ? 'Production cumulée' : 'Production ' + gLabel;
-  document.getElementById('mainSub').textContent = fmtDate(state.from) + ' – ' + fmtDate(state.to) + ' · kWh';
-  const lg = document.getElementById('mainLegend');
-  lg.innerHTML = state.cmp ? `<span><i style="background:var(--sun)"></i>Période</span><span><i class="ln" style="background:var(--s1)"></i>Année précédente</span>` : '';
-  if (state.cmp && prev && prev.every(v => v == null)) lg.innerHTML += '<span style="color:var(--muted)">pas de données N-1 sur cette période</span>';
-
-  const tableEl = document.getElementById('mainTable'), box = document.getElementById('mainChartBox');
-  if (state.mode === 'table') {
-    box.classList.add('hidden'); tableEl.classList.remove('hidden');
-    const t = document.createElement('table');
-    t.innerHTML = `<thead><tr><th>Période</th><th>Production (kWh)</th>${state.cmp?'<th>N-1 (kWh)</th><th>Écart</th>':''}</tr></thead>`;
-    const tb = document.createElement('tbody');
-    agg.forEach(([b,v],i) => { const tr = document.createElement('tr');
-      const cells = [bucketLabel(b,g), nf0.format(v)];
-      if (state.cmp) { const p = prev[i]; cells.push(p==null?'–':nf0.format(p), p? (v/p-1>=0?'+':'') + nf1.format((v/p-1)*100)+' %':'–'); }
-      cells.forEach(c => { const td = document.createElement('td'); td.textContent = c; td.className='num'; tr.appendChild(td); }); tb.appendChild(tr); });
-    t.appendChild(tb); tableEl.replaceChildren(t); return;
-  }
-  box.classList.remove('hidden'); tableEl.classList.add('hidden');
-
-  const sun = css('--sun'), s1 = css('--s1');
-  if (state.mode === 'cumul') {
-    let c = 0; const cum = vals.map(v => (c += v));
-    let cp = 0; const cumP = prev ? prev.map(v => v==null?null:(cp += v)) : null;
-    const ctx = document.getElementById('cMain').getContext('2d');
-    const grad = ctx.createLinearGradient(0,0,0,320); grad.addColorStop(0, sun + '55'); grad.addColorStop(1, sun + '00');
-    const ds = [{label:'Période',data:cum,borderColor:sun,backgroundColor:grad,fill:true,tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}];
-    if (cumP) ds.push({label:'Année précédente',data:cumP,borderColor:s1,borderWidth:2,pointRadius:0,pointHoverRadius:5,tension:.3,borderDash:[5,4],spanGaps:false});
-    makeChart('cMain',{type:'line',data:{labels,datasets:ds},options:baseOpts('kWh')});
-    return;
-  }
-  const ds = [{label:'Période',type:'bar',data:vals,backgroundColor:sun,hoverBackgroundColor:css('--sun-2'),borderRadius:{topLeft:4,topRight:4},borderSkipped:'bottom',
-    maxBarThickness:42,categoryPercentage:.86,barPercentage:.92,order:2}];
-  if (prev) ds.push({label:'Année précédente',type:'line',data:prev,borderColor:s1,backgroundColor:s1,borderWidth:2,pointRadius:vals.length>45?0:3,pointHoverRadius:5,tension:.3,order:1,spanGaps:false});
-  makeChart('cMain',{type:'bar',data:{labels,datasets:ds},options:baseOpts('kWh')});
-}
-
-function renderRecords(){
-  const ks = daysIn(state.from,state.to);
-  const byMonth = aggregate(state.from,state.to,'month'), byWeek = aggregate(state.from,state.to,'week');
-  const top = arr => arr.reduce((a,b) => b[1] > a[1] ? b : a, arr[0] || ['',0]);
-  const bm = top(byMonth), bw = top(byWeek);
-  let worst = ks[0]; ks.forEach(k => { if (DAY[k] < DAY[worst]) worst = k; });
-  const sunny = ks.filter(k => DAY[k] >= 0.6 * Math.max(...ks.map(x=>DAY[x]))).length;
-  const recs = [
-    ['Meilleure semaine', fmtE(bw[1]), bw[0] ? 'semaine du ' + fmtDate(bw[0]) : '–'],
-    ['Meilleur mois', fmtE(bm[1]), bm[0] ? MOIS[+bm[0].slice(5,7)-1] + ' ' + bm[0].slice(0,4) : '–'],
-    ['Jour le plus faible', ks.length ? nf0.format(DAY[worst]) + ' kWh' : '–', ks.length ? fmtDate(worst) : ''],
-    ['Jours très productifs', sunny + ' / ' + ks.length, '≥ 60 % du meilleur jour'],
-  ];
-  const box = document.getElementById('records'); box.replaceChildren();
-  recs.forEach(([a,b,c]) => { const d = document.createElement('div'); d.className='rec';
-    const s=document.createElement('span'); s.textContent=a; const st=document.createElement('strong'); st.className='num'; st.textContent=b; const e=document.createElement('em'); e.textContent=c;
-    d.append(s,st,e); box.appendChild(d); });
-  const s = stats(state.from,state.to), ann = s.n ? s.total/DATA.plant.kwp*365/s.n : 0;
-  document.getElementById('gaugeTxt').textContent = nf0.format(ann) + ' kWh/kWc·an';
-  requestAnimationFrame(() => document.getElementById('gaugeBar').style.width = Math.min(100, ann/1100*100) + '%');
-}
-
-/* ---------- heatmap ---------- */
-function heatmap(){
-  const end = LAST, start0 = addDays(end, -364);
-  const sd = D(start0); const wd = (sd.getDay()+6)%7; const start = addDays(start0, -wd);
-  const vals = Object.values(DAY), max = Math.max(...vals);
-  const level = v => v == null ? -1 : v <= 0.5 ? 0 : Math.min(5, 1 + Math.floor(v / max * 5 * 0.999));
-  const heat = document.getElementById('heat'), months = document.getElementById('heatMonths');
-  heat.replaceChildren(); months.replaceChildren();
-  const tip = document.getElementById('tip');
-  let col = 0, lastMonth = -1;
-  for (let k = start; k <= end; k = addDays(k,1)) {
-    const d = D(k), dow = (d.getDay()+6)%7;
-    if (dow === 0) {
-      const lab = document.createElement('span');
-      if (d.getMonth() !== lastMonth) { lab.textContent = MOIS[d.getMonth()]; lastMonth = d.getMonth(); }
-      months.appendChild(lab); col++;
-    }
-    const c = document.createElement('div'); c.className = 'c';
-    if (k < start0) c.classList.add('empty');
-    else {
-      const v = DAY[k]; const L = level(v);
-      if (L < 0) c.classList.add('na'); else c.style.background = `var(--heat${L})`;
-      c.tabIndex = 0;
-      const show = e => { tip.replaceChildren(); const b = document.createElement('b'); b.textContent = v == null ? 'Pas de données' : nf0.format(v) + ' kWh';
-        tip.append(b, document.createElement('br'), document.createTextNode(JOURS[d.getDay()] + ' ' + fmtDate(k)));
-        const r = c.getBoundingClientRect(); tip.style.left = Math.min(innerWidth - 170, Math.max(8, r.left - 60)) + 'px'; tip.style.top = (r.top - 54) + 'px'; tip.classList.add('on'); };
-      c.addEventListener('pointerenter', show); c.addEventListener('focus', show);
-      c.addEventListener('pointerleave', () => tip.classList.remove('on')); c.addEventListener('blur', () => tip.classList.remove('on'));
-      c.addEventListener('click', () => { state.from = k; state.to = k > LAST ? LAST : k; state.preset = null; state.gran='day';
-        state.from = addDays(k,-6) < FIRST ? FIRST : addDays(k,-6); state.to = addDays(k,7) > LAST ? LAST : addDays(k,7); syncControls(); renderAll();
-        document.getElementById('mainCard').scrollIntoView({behavior:'smooth',block:'center'}); });
-    }
-    heat.appendChild(c);
-  }
-  const sc = document.querySelector('.heat-scroll'); sc.scrollLeft = sc.scrollWidth;
-}
-
-/* ---------- hourly ---------- */
-function hourly(){
-  const h = DATA.hourly; if (!h) return;
-  const days = []; for (let i=0;i<h.values.length/24;i++) days.push(addDays(h.start,i));
-  if (!state.hourDay) state.hourDay = days[days.length-1];
-  const box = document.getElementById('hourDays'); box.replaceChildren();
-  days.forEach(k => { const b = document.createElement('button'); const d = D(k); b.textContent = JOURS[d.getDay()] + ' ' + d.getDate();
-    b.setAttribute('aria-pressed', k === state.hourDay); b.onclick = () => { state.hourDay = k; hourly(); }; box.appendChild(b); });
-  const idx = days.indexOf(state.hourDay), sel = h.values.slice(idx*24, idx*24+24);
-  const avg = [...Array(24)].map((_,i) => days.reduce((a,_,j) => a + h.values[j*24+i], 0) / days.length);
-  const total = sel.reduce((a,b)=>a+b,0), peak = sel.indexOf(Math.max(...sel));
-  document.getElementById('hourSub').textContent = fmtDate(state.hourDay) + ' · ' + nf0.format(total) + ' kWh · pic vers ' + peak + 'h';
-  const labels = [...Array(24)].map((_,i) => i + 'h');
-  const o = baseOpts('kWh');
-  makeChart('cHour',{type:'bar',data:{labels,datasets:[
-    {label:'Jour',data:sel,backgroundColor:css('--sun'),borderRadius:{topLeft:4,topRight:4},borderSkipped:'bottom',order:2,categoryPercentage:.9,barPercentage:.9},
-    {label:'Moyenne 7 j',type:'line',data:avg.map(v=>Math.round(v*10)/10),borderColor:css('--s1'),borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.35,order:1}
-  ]},options:o});
-}
-
-/* ---------- years (quarters grouped by year) ---------- */
-function years(){
-  const {q, live} = quarterMap();
-  const ys = [...new Set(Object.keys(q).map(k=>k.slice(0,4)))].sort();
-  const cols = ['--s1','--s2','--s3','--s4'].map(css);
-  const lg = document.getElementById('yearLegend'); lg.replaceChildren();
-  const ds = ys.map((y,i) => {
-    const sp = document.createElement('span'); const ii = document.createElement('i'); ii.style.background = cols[i % 4];
-    sp.append(ii, document.createTextNode(y + (Object.keys(q).some(k=>k.startsWith(y)&&live.has(k)) ? ' (en cours)' : ''))); lg.appendChild(sp);
-    return {label:y, data:['T1','T2','T3','T4'].map(t => q[y+'-'+t] != null ? Math.round(q[y+'-'+t]) : null),
-      backgroundColor:cols[i % 4], borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', categoryPercentage:.8, barPercentage:.9};
-  });
-  makeChart('cYears',{type:'bar',data:{labels:['T1 · hiver','T2 · printemps','T3 · été','T4 · automne'],datasets:ds},options:baseOpts('kWh')});
-}
-
-/* ---------- quarter history ---------- */
-function quarters(){
-  const {q, live} = quarterMap(); const ks = Object.keys(q).sort();
-  const sun = css('--sun'), soft = css('--sun-2');
-  const o = baseOpts('kWh');
-  makeChart('cQuarter',{type:'bar',data:{labels:ks.map(k=>k.replace('-',' ')),datasets:[{label:'',data:ks.map(k=>Math.round(q[k])),
-    backgroundColor:ks.map(k => live.has(k) ? soft : sun), borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', maxBarThickness:48}]},options:o});
-}
-
-function aurora(){
-  const box = document.getElementById('aurora');
-  if (AURORA_PUBLIC_URL) { const f = document.createElement('iframe'); f.src = AURORA_PUBLIC_URL; f.title = 'Aurora Vision PolyImmo'; f.loading = 'lazy'; box.replaceChildren(f); }
-  else { const p = document.createElement('div'); p.className = 'placeholder'; p.textContent = 'Le partage public n\'est pas encore activé sur Aurora Vision. Les données ci-dessus proviennent de la plateforme et sont mises à jour sur demande.'; box.replaceChildren(p); }
-}
-
-function observe(){
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold:.08});
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-}
-</script>
+<script src="app.js?v=3"></script>
+<script src="finance.js?v=3"></script>
 </body>
 </html>
