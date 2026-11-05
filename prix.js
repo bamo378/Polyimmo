@@ -196,11 +196,92 @@ async function renderSim(){
 }
 const MOISL = m => ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][+m.slice(5,7)-1] + ' ' + m.slice(0,4);
 
+
+/* ---------- HISTORIQUE depuis 2019 ---------- */
+async function loadHist(z){ const k = 'h' + z; if (cache[k]) return cache[k];
+  const [H, P, fxh, fx] = await Promise.all([fetch('data/history_' + z + '.json', {cache:'no-store'}).then(r => { if (!r.ok) throw new Error('hist'); return r.json(); }), loadPrices(z),
+    cache.fxh || fetch('data/fx_hist.json', {cache:'no-store'}).then(r => r.json()).then(d => cache.fxh = d.rates), loadFx()]);
+  const rates = Object.assign({}, cache.fxh, fx);
+  // prix horaires : historique puis fichier récent (moyenne des 4 quarts d'heure)
+  const hp = new Map(); H.values.forEach((v, i) => { if (v != null) hp.set(H.start + 3600*i, v); });
+  for (let i = 0; i < P.values.length; i += 1) { const u = P.start + 900*i, h = u - u % 3600; if (hp.has(h) && h < H.start + 3600*H.values.length) continue; const v = P.values[i]; if (v == null) continue;
+    const x = hp.get('q' + h) || [0, 0]; x[0] += v; x[1]++; hp.set('q' + h, x); }
+  for (const [k, x] of [...hp]) if (typeof k === 'string') { hp.set(+k.slice(1), x[0]/x[1]); hp.delete(k); }
+  cache[k] = {hp, rates}; return cache[k];
+}
+async function renderHist(){
+  const box = el('hsBody'); document.querySelectorAll('#hsZone button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === S.zone));
+  let D, W;
+  try { [D, W] = await Promise.all([loadHist(S.zone), loadPower()]); }
+  catch(e) { box.classList.add('hidden'); el('hsWait').classList.remove('hidden'); return; }
+  box.classList.remove('hidden'); el('hsWait').classList.add('hidden');
+  const {hp, rates} = D, vat = S.ht ? 1.081 : 1, nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2, css = PI.css;
+  // profil de production horaire type : 12 mois complets mesurés (nov. 2025 → oct. 2026), clé MM-JJ-HH
+  const prof = new Map(), wEnd = W.start + 900*(W.kw.length-1), wH = new Map();
+  for (let i = 0; i < W.kw.length; i++) { const u = W.start + 900*i, d = lday(u), kwh = W.kw[i]*0.25, h = u - u % 3600;
+    wH.set(h, (wH.get(h) || 0) + kwh);
+    if (d >= '2025-11-01' && d <= '2026-10-31') { const key = d.slice(5) + '-' + local(u).getUTCHours(); prof.set(key, (prof.get(key) || 0) + kwh); } }
+  const profQ = {}; for (const [k, v] of prof) { const q = Math.floor((+k.slice(0,2)-1)/3)+1; profQ[q] = (profQ[q] || 0) + v; }
+  const factor = {}; // facteur par trimestre réel / profil (production mesurée au compteur ou Aurora)
+  const qList = PI.ENTRY ? Object.keys(PI.ENTRY.meterQuarters || {}) : [];
+  const fac = q => { if (q in factor) return factor[q]; let f = null;
+    if (q >= '2023-T3' && PI.prodBetween) { const y = +q.slice(0,4), t = +q.slice(-1), a = `${y}-${String(3*t-2).padStart(2,'0')}-01`, b = PI.iso(new Date(y, 3*t, 0, 12));
+      if (b <= PI.LAST || qList.includes(q)) { const r = PI.prodBetween(a, b); if (r.kwh > 0) f = r.kwh / profQ[t]; } }
+    return factor[q] = f; };
+  const Y = new Map(); let minU = Infinity;
+  for (const [h, eur] of hp) { minU = Math.min(minU, h);
+    const L = local(h), d = L.toISOString().slice(0,10), y = +d.slice(0,4), q = PI.qOf(d), md = d.slice(5) === '02-29' ? '02-28' : d.slice(5);
+    const ct = toCt(eur, fxAt(rates, d)); const x = Y.get(y) || {n:0, neg:0, sum:0, min:Infinity, minD:null, kwh:0, rev:0, negK:0, negC:0, grd:0, grdK:0, real:true, last:d};
+    x.n++; x.sum += ct; if (ct < 0) x.neg++; if (ct < x.min) { x.min = ct; x.minD = d; } x.last = d;
+    let kwh;
+    if (h > wEnd) kwh = 0;
+    else if (h >= W.start - W.start % 3600) kwh = wH.get(h) || 0;
+    else { const f = fac(q); kwh = (prof.get(md + '-' + L.getUTCHours()) || 0) * (f == null ? 1 : f); if (f == null) x.real = false; }
+    if (kwh) { x.kwh += kwh; x.rev += kwh*ct/100; if (ct < 0) { x.negK += kwh; x.negC += kwh*ct/100; }
+      const g = PI.ENTRY && PI.ENTRY.pricesActual[q]; if (g != null) { x.grd += kwh*g/vat/100; x.grdK += kwh; } }
+    Y.set(y, x);
+  }
+  const ys = [...Y.keys()].sort().filter(y => Y.get(y).n > 24*300 || y === new Date().getFullYear());
+  const lastFull = ys.filter(y => y < new Date().getFullYear()).pop(), cur = ys[ys.length-1];
+  const yl = y => y === cur && y === new Date().getFullYear() ? y + '*' : String(y);
+  const full = ys.filter(y => y < new Date().getFullYear()), avgNegK = full.reduce((s,y)=>s+Y.get(y).negK,0)/full.length;
+  const worst = full.reduce((a,y) => Y.get(y).neg > Y.get(a).neg ? y : a, full[0]);
+  const L1 = Y.get(lastFull), F = Y.get(ys[0]);
+  el('hsKpis').innerHTML = [
+    ['Heures à prix négatif en ' + lastFull, nf0.format(L1.neg) + '<small>heures</small>', ys[0] + ' : ' + nf0.format(F.neg) + ' h · ' + (F.neg ? '×' + nf1.format(L1.neg/F.neg) : 'aucune')],
+    ['Année record', worst + '', nf0.format(Y.get(worst).neg) + ' heures négatives · ' + nf1.format(Y.get(worst).neg/Y.get(worst).n*100) + ' % de l\'année'],
+    ['Votre production touchée ' + `<span class="help" tabindex="0" data-tip="kWh que votre installation produit pendant les heures à prix négatif (moyenne des années complètes ${ys[0]}–${lastFull}).">?</span>`, nf0.format(avgNegK) + '<small>kWh/an</small>', 'en ' + lastFull + ' : ' + nf0.format(L1.negK) + ' kWh (' + nf1.format(L1.negK/L1.kwh*100) + ' % de la production)'],
+    ['Coût en ' + lastFull + ' si vous injectez', nf0.format(-L1.negC) + '<small>CHF</small>', 'à payer au marché pendant ces heures'],
+    ['Prix capté solaire ' + lastFull, nf2.format(L1.rev/L1.kwh*100) + '<small>ct/kWh</small>', 'facteur de capture ' + nf0.format((L1.rev/L1.kwh*100)/(L1.sum/L1.n)*100) + ' %'],
+    ['Prix capté solaire ' + ys[0], nf2.format(F.rev/F.kwh*100) + '<small>ct/kWh</small>', 'facteur de capture ' + nf0.format((F.rev/F.kwh*100)/(F.sum/F.n)*100) + ' %'],
+  ].map(([k,v,d]) => `<div class="kpi"><div class="k">${k}</div><div class="v num" style="font-size:1.5rem">${v}</div><div class="d">${d}</div></div>`).join('');
+  const labels = ys.map(yl);
+  PI.makeChart('cHsNeg', {type:'bar', data:{labels, datasets:[
+    {label:'Heures à prix négatif', data:ys.map(y => Y.get(y).neg), backgroundColor:ys.map(y => y === cur && y === new Date().getFullYear() ? css('--bad') + '88' : css('--bad')), borderRadius:{topLeft:5,topRight:5}, borderSkipped:'bottom', maxBarThickness:46, yAxisID:'y'},
+    {label:'Votre production à prix négatif', type:'line', data:ys.map(y => Math.round(Y.get(y).negK)), borderColor:css('--sun'), backgroundColor:css('--sun'), borderWidth:2.2, pointRadius:3, tension:.3, yAxisID:'y1'}]},
+    options:PI.baseOpts('h', o => { o.plugins.legend = {display:true, position:'top', align:'end', labels:{boxWidth:10, boxHeight:10, color:css('--ink-2'), font:{size:11, weight:'600'}}};
+      o.scales.y1 = {position:'right', beginAtZero:true, grid:{display:false}, border:{display:false}, ticks:{color:css('--muted'), font:{size:11}, maxTicksLimit:6, callback:v => nf0.format(v) + ' kWh'}};
+      o.plugins.tooltip.callbacks.label = c => c.datasetIndex ? ' Votre production : ' + nf0.format(c.parsed.y) + ' kWh' : ' ' + nf0.format(c.parsed.y) + ' heures négatives';
+      o.plugins.tooltip.callbacks.afterBody = it => { const x = Y.get(ys[it[0].dataIndex]); return ['Coût si injection : ' + nf0.format(-x.negC) + ' CHF', 'Prix le plus bas : ' + nf2.format(x.min) + ' ct/kWh (' + PI.fmtDate(x.minD) + ')']; }; })});
+  PI.makeChart('cHsPrice', {type:'line', data:{labels, datasets:[
+    {label:'Prix moyen du marché', data:ys.map(y => +(Y.get(y).sum/Y.get(y).n).toFixed(2)), borderColor:css('--s1'), backgroundColor:css('--s1'), borderWidth:2.2, pointRadius:3, tension:.3},
+    {label:'Prix capté par votre production', data:ys.map(y => +(Y.get(y).rev/Y.get(y).kwh*100).toFixed(2)), borderColor:css('--sun'), backgroundColor:css('--sun'), borderWidth:2.2, pointRadius:3, tension:.3},
+    {label:'Prix GRD' + (S.ht ? ' (HT)' : ' (TTC)'), data:ys.map(y => Y.get(y).grdK ? +(Y.get(y).grd/Y.get(y).grdK*100).toFixed(2) : null), borderColor:css('--ink-2'), backgroundColor:css('--ink-2'), borderWidth:2, borderDash:[5,4], pointRadius:3, tension:.3}]},
+    options:PI.baseOpts('ct', o => { o.scales.y.ticks.callback = v => nf0.format(v); o.plugins.legend = {display:true, position:'top', align:'end', labels:{boxWidth:10, boxHeight:3, color:css('--ink-2'), font:{size:11, weight:'600'}}}; })});
+  el('hsTable').innerHTML = '<thead><tr><th class="l">Année</th><th>Heures négatives</th><th>Prix le plus bas (ct)</th><th>Prix moyen (ct)</th><th>Prix capté solaire (ct)</th><th>Facteur de capture</th><th>Votre prod. à prix négatif (kWh)</th><th>Coût si injection (CHF)</th><th>Revenu au marché (CHF)</th><th>Revenu GRD (CHF)</th><th>Écart (CHF)</th></tr></thead><tbody>' +
+    ys.map(y => { const x = Y.get(y), cp = x.rev/x.kwh*100, av = x.sum/x.n, comp = x.grdK && Math.abs(x.grdK - x.kwh) < 1, dd = x.rev - x.grd;
+      return `<tr><td class="l">${yl(y)}${x.real ? '' : ' <span class="muted" title="Production estimée avec votre profil type">≈</span>'}</td><td>${nf0.format(x.neg)} <span class="muted">(${nf1.format(x.neg/x.n*100)} %)</span></td><td class="${x.min < 0 ? 'neg' : ''}">${nf2.format(x.min)}</td><td>${nf2.format(av)}</td><td>${nf2.format(cp)}</td><td>${nf0.format(cp/av*100)} %</td><td>${nf0.format(x.negK)} <span class="muted">(${nf1.format(x.negK/x.kwh*100)} %)</span></td><td class="${x.negC < 0 ? 'neg' : ''}">${x.negC < 0 ? '−' + nf0.format(-x.negC) : '0'}</td><td>${nf0.format(x.rev)}</td><td>${comp ? nf0.format(x.grd) : '–'}</td><td class="${comp ? (dd >= 0 ? 'pos' : 'neg') : ''}">${comp ? (dd >= 0 ? '+' : '') + nf0.format(dd) : '–'}</td></tr>`; }).join('') + '</tbody>';
+  el('hsNote').innerHTML = `Prix day-ahead ${ZONES[S.zone]} en moyenne horaire (energy-charts.info), convertis en CHF au taux BCE du jour. ` +
+    `Production : vos quarts d'heure réels Aurora depuis le 22 oct. 2025 ; avant, votre profil horaire mesuré (nov. 2025 → oct. 2026) recalé sur la production réelle de chaque trimestre depuis la mise en service (T3 2023). ` +
+    `Les années marquées ≈ (avant 2023) montrent ce que l'installation aurait vécu si elle avait existé, avec une année de production type. ` +
+    `Revenu GRD : prix réel de chaque facture trimestrielle${S.ht ? ' hors TVA' : ' TTC'}, affiché seulement pour les années entièrement facturées. ${cur}* : année en cours, jusqu'au ${PI.fmtDate(Y.get(cur).last)}.`;
+}
+
 /* ---------- branchement ---------- */
 PI.renderPrix = async function(){
   if (busy) return; busy = true;
   document.querySelectorAll('#prix .card').forEach(c => c.style.opacity = .6);
-  try { await renderPrices(); await renderSim(); const P = cache.prices[S.zone];
+  try { await renderPrices(); await renderSim(); await renderHist(); const P = cache.prices[S.zone];
     el('pxUpd').textContent = 'Prix mis à jour automatiquement chaque jour · dernière mise à jour ' + new Date(P.updated).toLocaleString('fr-CH',{dateStyle:'long',timeStyle:'short'}) + ' · source energy-charts.info (CC BY 4.0)'; }
   catch(e) { console.error(e); el('pxKpis').innerHTML = '<div class="kpi"><div class="k">Les prix n\'ont pas pu être chargés</div><div class="d">Réessayez dans un instant.</div></div>'; }
   finally { busy = false; document.querySelectorAll('#prix .card').forEach(c => c.style.opacity = 1); }
@@ -211,8 +292,9 @@ function wire(){
   on('pxUnit', r => { S.unit = r; renderPrices(); });
   on('pxRange', r => { S.range = r; renderPrices(); });
   on('simRange', r => { S.sim = r; renderSim(); });
+  on('hsZone', r => { S.zone = r; PI.renderPrix(); });
   el('simNeg').onchange = e => { S.neg = e.target.checked; renderSim(); };
-  el('simHt').onchange = e => { S.ht = e.target.checked; renderSim(); };
+  el('simHt').onchange = e => { S.ht = e.target.checked; renderSim(); renderHist(); };
   el('simFee').oninput = e => { S.fee = +e.target.value; el('simFeeV').textContent = PI.nf2.format(S.fee) + ' ct/kWh'; clearTimeout(PI._sf); PI._sf = setTimeout(renderSim, 120); };
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();

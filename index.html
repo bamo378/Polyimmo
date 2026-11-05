@@ -253,7 +253,7 @@ tr.proj td{color:var(--ink-2)}
 tr.cur td{background:color-mix(in srgb,var(--sun) 8%,transparent)}
 td.neg{color:var(--bad)} td.pos{color:var(--good)}
 .feectl{display:inline-flex;align-items:center;gap:10px;font-size:.84rem;font-weight:600;color:var(--ink-2)}.feectl input{width:150px;accent-color:var(--brand)}
-#prix .card{transition:opacity .2s}
+#prix .card{transition:opacity .2s} span.muted{color:var(--muted);font-size:.85em;font-weight:500}
 @media (max-width:1000px){#pxKpis,#simKpis{grid-template-columns:1fr 1fr;gap:10px}}@media (max-width:560px){#pxKpis .v,#simKpis .v{font-size:1.15rem!important}#pxKpis .kpi,#simKpis .kpi{padding:12px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
@@ -584,6 +584,24 @@ body.noscroll{overflow:hidden}
     <div class="tablewrap" style="max-height:none"><table id="simTable"></table></div>
     <p class="note" id="simMethod"></p>
   </section>
+
+  <div class="page-h" style="margin-top:34px">
+    <div><h1 style="font-size:1.45rem">Historique depuis 2019 : prix négatifs et valeur de votre production</h1><p>Combien d'heures par an le prix est passé sous zéro, et ce que cela aurait représenté pour votre installation, année après année.</p></div>
+    <div class="chips" id="hsZone"><button data-r="CH" aria-pressed="true">Suisse</button><button data-r="DE-LU">Allemagne</button><button data-r="FR">France</button></div>
+  </div>
+  <section class="card hidden" id="hsWait"><p style="margin:0">L'historique des prix est en cours de téléchargement par le robot ; il apparaîtra ici dans quelques minutes.</p></section>
+  <div id="hsBody">
+    <div class="grid g3" id="hsKpis"></div>
+    <div class="grid g2 mt">
+      <section class="card"><div class="card-h"><div><h2>Heures à prix négatif par an</h2><p class="sub">barres : heures · courbe : vos kWh produits pendant ces heures</p></div></div><div class="chart"><canvas id="cHsNeg"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Prix moyen et prix capté par le solaire</h2><p class="sub">ct/kWh CHF · plus l'écart grandit, plus le solaire vend aux heures creuses</p></div></div><div class="chart"><canvas id="cHsPrice"></canvas></div></section>
+    </div>
+    <section class="card mt">
+      <div class="card-h"><div><h2>Année par année</h2><p class="sub">Votre installation au prix du marché, chaque année</p></div></div>
+      <div class="tablewrap" style="max-height:none"><table id="hsTable"></table></div>
+      <p class="note" id="hsNote"></p>
+    </section>
+  </div>
 </section>
 
   <!-- ================= SAISIE ================= -->
@@ -738,6 +756,6 @@ body.noscroll{overflow:hidden}
 <script src="finance.js?v=8"></script>
 <script src="checks.js?v=8"></script>
 <script src="report.js?v=8"></script>
-<script src="prix.js?v=8"></script>
+<script src="prix.js?v=9"></script>
 </body>
 </html>
