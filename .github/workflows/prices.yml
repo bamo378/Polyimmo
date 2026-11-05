@@ -1,0 +1,31 @@
+name: Prix du marché (mise à jour quotidienne)
+on:
+  schedule:
+    - cron: "30 13 * * *"   # chaque jour après la publication des prix day-ahead
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/prices.yml"
+      - "scripts/fetch_prices.py"
+permissions:
+  contents: write
+concurrency:
+  group: prices
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/fetch_prices.py
+      - name: Enregistrer
+        run: |
+          git config user.name "polyimmo-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/prices_*.json data/fx_eurchf.json
+          git diff --cached --quiet || git commit -m "Prix du marché : mise à jour automatique"
+          git pull --rebase origin main
+          git push
