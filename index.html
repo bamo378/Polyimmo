@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PolyImmo Solaire</title>
 <meta name="description" content="Tableau de bord de production de l'installation photovoltaïque PolyImmo à Bulle (185,92 kWc).">
-<meta name="theme-color" content="#0e1726">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='%23f2a900'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#1a171b">
+<link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
   --line:#e6e8e3; --grid:#eef0eb;
   --sun:#e89a00; --sun-2:#f7c548; --sun-soft:#fdf1d3;
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
-  --good:#16a34a;
+  --good:#16a34a; --brand:#e31818; --brand-ink:#1a171b;
   --heat0:#eef0eb; --heat1:#fde7b0; --heat2:#f8c95a; --heat3:#eda100; --heat4:#c26f00; --heat5:#7c4400;
   --shadow:0 1px 2px rgba(17,24,39,.04),0 8px 24px -12px rgba(17,24,39,.12);
   --radius:18px;
@@ -51,15 +51,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sa
 .wrap{max-width:1240px;margin:0 auto;padding:0 16px}
 
 /* ---------- hero ---------- */
-.hero{position:relative;overflow:hidden;background:#0e1726;color:#f5f7fa;padding:22px 0 84px}
+.hero{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a171b 0%,#221d21 55%,#2a1d1d 100%);color:#f5f7fa;padding:22px 0 84px}
 .hero::before{content:"";position:absolute;inset:auto -10% -60% auto;width:720px;height:720px;border-radius:50%;
   background:radial-gradient(circle,rgba(242,169,0,.55) 0%,rgba(242,169,0,.12) 40%,transparent 68%);pointer-events:none;
   animation:glow 9s ease-in-out infinite alternate}
+.hero::after{content:"";position:absolute;left:-180px;top:-220px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(227,24,24,.28),transparent 65%);pointer-events:none}
 @keyframes glow{from{transform:translate(0,0) scale(1)}to{transform:translate(-40px,20px) scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.hero::before{animation:none}}
+.hero > .wrap{position:relative;z-index:1}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:-.02em;color:#fff;text-decoration:none}
-.logo img{height:38px;width:auto;display:block}
+.logo img{height:52px;width:auto;display:block;background:#fff;padding:6px 12px;border-radius:14px;box-shadow:0 6px 20px -8px rgba(0,0,0,.5)}
+.logo .tagline{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#d7d2d6;border-left:2px solid var(--brand);padding-left:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 200deg,#ffd36b,#f2a900,#e07b00,#ffd36b);
   box-shadow:0 0 0 5px rgba(242,169,0,.18)}
 .logo small{font-weight:600;color:#9fb0c8;font-size:.8rem;margin-left:2px}
@@ -72,7 +75,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sa
 .hero-body{position:relative;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:end;margin-top:40px}
 @media (max-width:860px){.hero-body{grid-template-columns:1fr}}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:#ffd36b}
+  text-transform:uppercase;color:#ff8a8a}
 .pulse{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 10px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
 .hero h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;letter-spacing:-.035em;margin:10px 0 10px;font-weight:800}
@@ -92,7 +95,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sa
 .seg button{appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:.84rem;font-weight:700;
   padding:7px 11px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
 .seg button:hover{color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12),inset 0 -2px 0 var(--brand)}
 .range{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--ink-2)}
 .range input{font:inherit;font-size:.84rem;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:6px 8px}
 .flabel{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-left:4px}
@@ -104,7 +107,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sa
 .toggle{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none}
 .toggle input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background .2s;margin:0}
 .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
-.toggle input:checked{background:var(--s1)}
+.toggle input:checked{background:var(--brand)}
 .toggle input:checked::after{transform:translateX(14px)}
 
 /* ---------- cards ---------- */
@@ -187,6 +190,7 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
 .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+@media (max-width:520px){.hs strong{font-size:1.05rem}.hs{padding:11px}}
 </style>
 </head>
 <body>
@@ -197,6 +201,7 @@ footer{color:var(--muted);font-size:.78rem;padding:10px 0 36px}
       <a class="logo" href="#" aria-label="PolyImmo">
         <img src="assets/logo.png" alt="PolyImmo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'mark'}));document.getElementById('logoText').classList.remove('hidden')">
         <span id="logoText" class="hidden">PolyImmo<small>Solaire</small></span>
+        <span class="tagline">Énergie solaire</span>
       </a>
       <div class="tools">
         <button class="iconbtn" id="themeBtn" type="button" aria-label="Changer de thème">
