@@ -120,6 +120,31 @@ for n in range(days, -1, -1):
                 for ts, v in got.items(): D["p15"].setdefault(utc(ts), [None, None])[1] = None if v is None else round(v, 2)
                 break
 
+# Énergie à l'heure (1 an) : production + consommation, fenêtres de 24 h.
+# Rattrapage progressif vers le passé (max BACK appels par passage) pour rester dans l'offre gratuite.
+D.setdefault("h", {})
+BACK = int(os.environ.get("HOURLY_BACKFILL", "260"))
+def hourly(d):
+    f = dt.datetime.combine(d, dt.time(), TZ); t = f + dt.timedelta(days=1)
+    q = {"from": iso(f), "to": iso(t), "resolution": "HOUR", "unit": "WH"}
+    ok = False
+    for ts, v in kwh(get(f"/sites/{SITE}/energy", **q)).items():
+        D["h"].setdefault(utc(ts), [None, None])[0] = None if v is None else round(v, 3); ok = True
+    for sn in D["meters"]:
+        got = kwh(get(f"/sites/{SITE}/meters/{sn}/consumption-energy", **q))
+        if any(v for v in got.values()):
+            for ts, v in got.items(): D["h"].setdefault(utc(ts), [None, None])[1] = None if v is None else round(v, 3)
+            break
+    return ok
+for n in range(3, -1, -1): hourly(today - dt.timedelta(days=n))      # jours récents
+oldest = dt.date.fromisoformat(D.get("hFrom", today.isoformat()))
+limit = today - dt.timedelta(days=364)
+used = 0
+while oldest > limit and used + 2 <= BACK:
+    oldest -= dt.timedelta(days=1); hourly(oldest); used += 1 + max(1, len(D["meters"]))
+D["hFrom"] = oldest.isoformat()
+D["h"] = {k: v for k, v in sorted(D["h"].items()) if k >= limit.isoformat()}
+
 D["daily"] = dict(sorted(D["daily"].items()))
 # garder 400 jours de quarts d'heure
 lim = (today - dt.timedelta(days=400)).isoformat()
