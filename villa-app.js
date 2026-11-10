@@ -116,14 +116,14 @@ function renderDash(){
   const prevKeys = keys.map(k => { const d = Dd(k); d.setFullYear(d.getFullYear()-1); return isoD(d); }).filter(k => V.daily[k]);
   const Pp = prevKeys.length === keys.length ? prevKeys.reduce((s,k) => s + (+V.daily[k].prod || 0), 0) : null;
   const best = rows.reduce((a,r) => r.prod > (a ? a.prod : -1) ? r : a, null);
-  const kwp = V.site.kwp, spec = T.prod / kwp, nd = rows.length;
+  const kwp = V.site.kwp, nd = rows.length, spec = T.prod / kwp / (nd > 400 ? nd / 365.25 : 1);
   $('dKpis').innerHTML = [
     ['Production', nf0.format(T.prod) + '<small>kWh</small>', Pp ? `<span class="trend ${T.prod >= Pp ? 'up' : 'down'}">${T.prod >= Pp ? '▲' : '▼'} ${nf1.format(Math.abs(T.prod/Pp - 1)*100)} %</span> vs l'an passé` : fmtDate(keys[0]) + ' → ' + fmtDate(last)],
     ['Consommation', nf0.format(T.cons) + '<small>kWh</small>', nf1.format(T.cons/nd) + ' kWh par jour en moyenne'],
     ['Autoconsommation ' + help('Part de la production utilisée directement à la maison.'), T.selfPct == null ? '–' : nf0.format(T.selfPct) + '<small>%</small>', nf0.format(T.self) + ' kWh utilisés sur place'],
     ['Autonomie ' + help('Part de la consommation couverte par vos panneaux.'), T.autPct == null ? '–' : nf0.format(T.autPct) + '<small>%</small>', nf0.format(T.imp) + ' kWh achetés au réseau'],
     ['Vendu au réseau', nf0.format(T.exp) + '<small>kWh</small>', nf0.format(T.prod ? T.exp/T.prod*100 : 0) + ' % de la production'],
-    ['Rendement ' + help('kWh produits par kWc installé : permet de comparer avec d\'autres installations.'), nf0.format(spec) + '<small>kWh/kWc</small>', best ? 'meilleur jour : ' + nf0.format(best.prod) + ' kWh le ' + fmtDate(best.k) : ''],
+    ['Rendement ' + help('kWh produits par kWc installé : permet de comparer avec d\'autres installations (environ 1 000 kWh/kWc par an en Suisse).'), nf0.format(spec) + '<small>kWh/kWc' + (nd > 400 ? ' par an' : '') + '</small>', best ? 'meilleur jour : ' + nf0.format(best.prod) + ' kWh le ' + fmtDate(best.k) : ''],
   ].map(kpi).join('');
   const G = new Map(); rows.forEach(r => { const g = gran === 'd' ? r.k : gran === 'm' ? r.k.slice(0,7) : r.k.slice(0,4); const x = G.get(g) || {prod:0, cons:0, imp:0, exp:0}; ['prod','cons','imp','exp'].forEach(f => x[f] += r[f]); G.set(g, x); });
   const gk = [...G.keys()], gv = gk.map(g => derive(G.get(g)));
@@ -217,7 +217,7 @@ async function renderTariffs(){
     ['Prix moyen payé · GESA', nf2.format(r.imp ? r.gesaBuy/r.imp*100 : 0) + '<small>ct/kWh</small>', 'TTC, énergie + réseau + taxes'],
     ['Prix moyen payé · dynamique', nf2.format(r.imp ? r.dynBuy/r.imp*100 : 0) + '<small>ct/kWh</small>', 'TTC, spot + réseau + taxes'],
     ['Prix moyen de vente · dynamique', nf2.format(r.exp ? r.dynSell/r.exp*100 : 0) + '<small>ct/kWh</small>', 'contre ' + nf2.format(SET.tariff.sell + SET.tariff.hkn) + ' ct avec GESA'],
-    ['Bilan · dynamique vs GESA', `<span class="${diff <= 0 ? 'pos' : 'neg'}">${sgn(-diff)}</span><small>CHF</small>`, diff <= 0 ? 'en faveur du dynamique' : 'en faveur du tarif GESA'],
+    ['Tarif dynamique vs GESA', `<span class="${diff <= 0 ? 'pos' : 'neg'}">${sgn(diff)}</span><small>CHF</small>`, diff <= 0 ? 'moins cher avec le dynamique' : 'plus cher avec le dynamique : GESA reste avantageux'],
   ].map(kpi).join('');
   const mk = [...r.M.keys()].sort(), mv = mk.map(m => r.M.get(m));
   chart('cTar', {type:'bar', data:{labels:mk.map(m => MOIS[+m.slice(5)-1] + ' ' + m.slice(2,4)), datasets:[
