@@ -1,0 +1,40 @@
+name: Villa (SolarEdge)
+on:
+  schedule:
+    - cron: "40 4 * * *"
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "Code d'autorisation SolarEdge (seulement la première fois)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+jobs:
+  villa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - name: Récupérer les données SolarEdge
+        env:
+          SOLAREDGE_CLIENT_ID: ${{ secrets.SOLAREDGE_CLIENT_ID }}
+          SOLAREDGE_CLIENT_SECRET: ${{ secrets.SOLAREDGE_CLIENT_SECRET }}
+          AUTH_CODE: ${{ github.event.inputs.code }}
+        run: python scripts/fetch_villa.py
+      - name: Enregistrer
+        if: always()
+        run: |
+          git config user.name "polyimmo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/villa.json data/villa_token.enc 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "Villa : mise à jour automatique"
+          git pull --rebase && git push

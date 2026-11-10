@@ -60,7 +60,7 @@ button{font-family:inherit}
 .logo span{font-size:.78rem;font-weight:700;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;line-height:1.2}
 .tabs{display:flex;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none;height:100%;align-items:stretch}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 14px;cursor:pointer;white-space:nowrap;
+.tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 11px;cursor:pointer;white-space:nowrap;
   position:relative;display:inline-flex;align-items:center;gap:7px;transition:color .15s}
 .tabs button:hover{color:var(--ink)}
 .tabs button[aria-current="page"]{color:var(--ink)}
@@ -262,6 +262,12 @@ td.neg{color:var(--bad)} td.pos{color:var(--good)}
 .cadet{margin-top:16px}.cadet summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--ink-2);padding:6px 0}
 tr.proj td{opacity:.72}
 .linkbtn{appearance:none;border:0;background:none;color:var(--brand);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+.oauthbox{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.oauthcard{background:var(--surface);color:var(--ink);border-radius:18px;max-width:560px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.oauthcard h2{margin:0 0 10px}.oauthcard ol{padding-left:20px;line-height:1.7}
+.oacode{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0;word-break:break-all;font-size:.85rem}
+.oabtns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+ol.steps{line-height:1.8;padding-left:20px}
 #prix .card{transition:opacity .2s} span.muted{color:var(--muted);font-size:.85em;font-weight:500}
 @media (max-width:1000px){#pxKpis,#simKpis{grid-template-columns:1fr 1fr;gap:10px}}@media (max-width:560px){#pxKpis .v,#simKpis .v{font-size:1.15rem!important}#pxKpis .kpi,#simKpis .kpi{padding:12px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
@@ -376,7 +382,8 @@ body.noscroll{overflow:hidden}
       <button data-v="home" aria-current="page">Accueil</button>
       <button data-v="prod">Production</button>
       <button data-v="fin">Finances</button>
-      <button data-v="prix">Prix marché</button>
+      <button data-v="prix">Marché</button>
+      <button data-v="villa">Villa</button>
       <button data-v="saisie">Saisie</button>
       <button data-v="controles">Contrôles <span class="tbadge-n hidden" id="tabBadge">0</span></button>
       <button data-v="rapports">Rapports</button>
@@ -634,6 +641,26 @@ body.noscroll{overflow:hidden}
   </div>
 </section>
 
+<!-- ================= VILLA ================= -->
+<section data-view="villa" id="villa" class="hidden">
+  <div class="page-h"><div><h1>Villa</h1><p id="vlSub">Installation SolarEdge · production, consommation et réseau</p></div>
+    <div class="chips" id="vlRange"><button data-r="7">7 jours</button><button data-r="30" aria-pressed="true">30 jours</button><button data-r="12m">12 mois</button><button data-r="ytd">Cette année</button><button data-r="all">Par année</button></div></div>
+  <section class="card hidden" id="vlEmpty">
+    <h2 style="margin-top:0">Connexion à SolarEdge</h2>
+    <p>L'onglet se remplira automatiquement dès que le robot aura reçu l'autorisation de lire votre installation.</p>
+    <ol class="steps"><li>Vérifiez que les secrets <code>SOLAREDGE_CLIENT_ID</code> et <code>SOLAREDGE_CLIENT_SECRET</code> sont enregistrés dans GitHub.</li>
+      <li>Cliquez sur <b>Autoriser l'accès</b>, connectez-vous à SolarEdge et acceptez.</li>
+      <li>Vous revenez ici : suivez les 3 clics indiqués.</li></ol>
+    <a class="btn-primary" id="vlAuth" style="text-decoration:none;display:inline-block" href="#">Autoriser l'accès SolarEdge</a>
+  </section>
+  <div id="vlBody" class="hidden">
+    <div class="grid g3" id="vlKpis"></div>
+    <section class="card mt"><div class="card-h"><div><h2>Production et consommation</h2><p class="sub" id="vlNote"></p></div></div><div class="chart" style="height:340px"><canvas id="cVl"></canvas></div></section>
+    <section class="card mt" id="vlDayCard"><div class="card-h"><div><h2>Journée au quart d'heure</h2><p class="sub" id="vlDaySum"></p></div><div class="chips" id="vlDays"></div></div><div class="chart"><canvas id="cVlDay"></canvas></div></section>
+    <p class="note">Source : SolarEdge Monitoring API (mise à jour automatique chaque matin).</p>
+  </div>
+</section>
+
   <!-- ================= SAISIE ================= -->
   <section data-view="saisie" class="view hidden" id="saisie">
     <div class="view-head">
@@ -781,12 +808,13 @@ body.noscroll{overflow:hidden}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
-<script src="entries.js?v=9"></script>
-<script src="app.js?v=9"></script>
-<script src="finance.js?v=9"></script>
-<script src="checks.js?v=9"></script>
-<script src="report.js?v=9"></script>
-<script src="prix.js?v=9"></script>
+<script src="entries.js?v=10"></script>
+<script src="app.js?v=10"></script>
+<script src="finance.js?v=10"></script>
+<script src="checks.js?v=10"></script>
+<script src="report.js?v=10"></script>
+<script src="prix.js?v=10"></script>
 <script src="cash.js?v=1"></script>
+<script src="villa.js?v=1"></script>
 </body>
 </html>
