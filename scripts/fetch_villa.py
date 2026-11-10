@@ -133,7 +133,14 @@ if not D.get("hMeters"): D["h"] = {}; D.pop("hFrom", None)
 D.setdefault("h", {})
 BACK = int(os.environ.get("HOURLY_BACKFILL", "240"))
 def hourly(d):
-    f = dt.datetime.combine(d, dt.time(), TZ); t = f + dt.timedelta(days=1)
+    f = dt.datetime.combine(d, dt.time(), TZ)
+    end = dt.datetime.combine(d + dt.timedelta(days=1), dt.time(), TZ)
+    if (end - f) != dt.timedelta(hours=24) or (end.astimezone(dt.timezone.utc) - f.astimezone(dt.timezone.utc)) != dt.timedelta(hours=24):
+        # jour du changement d'heure (23 h ou 25 h) : deux demi-journées
+        mid = (f.astimezone(dt.timezone.utc) + dt.timedelta(hours=12)).astimezone(TZ)
+        _hourly(f, mid); _hourly(mid, end); return
+    _hourly(f, end)
+def _hourly(f, t):
     for ts, v in kwh(get(f"/sites/{SITE}/energy", **{"from": iso(f), "to": iso(t), "resolution": "HOUR", "unit": "WH"})).items():
         D["h"].setdefault(utc(ts), [None, None, None, None])[0] = None if v is None else round(v, 3)
     for ts, x in telem(f, t, "HOUR").items():
@@ -146,6 +153,11 @@ limit = today - dt.timedelta(days=364)
 used = 0
 while oldest > limit and used + 2 <= BACK:
     oldest -= dt.timedelta(days=1); hourly(oldest); used += 2
+# trous éventuels (ex. changement d'heure) : on les recomplète, 5 jours max par passage
+cnt = {}
+for k in D["h"]: dd = lday(k.replace("Z", ":00Z")); cnt[dd] = cnt.get(dd, 0) + 1
+gaps = [d for d in (oldest + dt.timedelta(days=i) for i in range((today - oldest).days)) if cnt.get(d.isoformat(), 0) < 23][:5]
+for d in gaps: hourly(d)
 D["hFrom"] = oldest.isoformat(); D["hMeters"] = True
 D["h"] = {k: v for k, v in sorted(D["h"].items()) if k >= limit.isoformat()}
 
