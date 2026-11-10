@@ -244,7 +244,7 @@ async function renderTariffs(){
   const pr = period(H0, S.per), sub = pr.H, r = costs(sub, P), synth = sub.filter(x => x.synth).length;
   const nd = r.n / 24, diff = r.dynNet - r.gesaNet;
   $('tLead').innerHTML = `Sur la période <b>${pr.label}</b> (${nf0.format(nd)} jours), votre électricité vous a coûté <b>${nf0.format(r.gesaNet)} CHF</b> net avec le tarif GESA (achats ${nf0.format(r.gesaBuy)} CHF − ventes ${nf0.format(r.gesaSell)} CHF). ` +
-    `Avec un tarif <b>dynamique</b> (prix du marché ${P.zone === 'CH' ? 'suisse' : P.zone} heure par heure + réseau et taxes), ce serait <b>${nf0.format(r.dynNet)} CHF</b> : <b class="${diff <= 0 ? 'pos' : 'neg'}">${diff <= 0 ? 'économie de ' : 'surcoût de '}${nf0.format(Math.abs(diff))} CHF</b>.` + (synth ? ` <span class="muted">${nf0.format(synth/r.n*100)} % des heures sont reconstruites à partir des totaux journaliers et de vos profils horaires mesurés (SolarEdge ne fournit le détail horaire que sur 12 mois).</span>` : '');
+    `Avec un tarif <b>dynamique</b> (prix du marché ${P.zone === 'CH' ? 'suisse' : P.zone} heure par heure + réseau et taxes), ce serait <b>${nf0.format(r.dynNet)} CHF</b> : <b class="${diff <= 0 ? 'pos' : 'neg'}">${diff <= 0 ? 'économie de ' : 'surcoût de '}${nf0.format(Math.abs(diff))} CHF</b>.` + (synth / r.n > 0.01 ? ` <span class="muted">${nf0.format(synth/r.n*100)} % des heures sont reconstruites à partir des totaux journaliers et de vos profils horaires mesurés (SolarEdge ne fournit le détail horaire que sur 12 mois).</span>` : '');
   $('tKpis').innerHTML = [
     ['Acheté au réseau', nf0.format(r.imp) + '<small>kWh</small>', nf0.format(r.imp ? r.impHT/r.imp*100 : 0) + ' % en haut tarif'],
     ['Vendu au réseau', nf0.format(r.exp) + '<small>kWh</small>', 'repris à ' + nf2.format(SET.tariff.sell + SET.tariff.hkn) + ' ct par GESA'],
@@ -365,7 +365,7 @@ async function renderBattery(){
   const synth = H.filter(x => x.synth).length;
   $('bLead').innerHTML = `Gestion <b>${mode === 'smart' ? 'intelligente' + (SET.bat.gridCharge ? ' avec recharge depuis le réseau' : '') : 'simple (autoconsommation)'}</b>. Calcul sur la période <b>${pr.label}</b> (${nf0.format(nd)} jours, ramené à une année). Avec le <b>tarif GESA actuel</b>, la taille la plus rentable est <b>${nf0.format(bestG.c)} kWh</b> : ${verdict(bestG.fg)}. ` +
     `Avec un <b>tarif dynamique</b>, c'est <b>${nf0.format(bestD.c)} kWh</b> : ${verdict(bestD.fd)}.` +
-    (synth ? ` <span class="muted">${nf0.format(synth/H.length*100)} % des heures sont reconstruites à partir de vos totaux journaliers et profils horaires mesurés.</span>` : '');
+    (synth / H.length > 0.01 ? ` <span class="muted">${nf0.format(synth/H.length*100)} % des heures sont reconstruites à partir de vos totaux journaliers et profils horaires mesurés.</span>` : '');
   $('bSizes').innerHTML = cand.map(x => `<button data-r="${x.c}" aria-pressed="${x.c === S.bsize}">${nf0.format(x.c)} kWh${x === bestG ? ' ★' : ''}</button>`).join('');
   $('bKpis').innerHTML = [
     ['Prix de la batterie', nf0.format(sel.fg.inv) + '<small>CHF</small>', nf0.format(sel.c) + ' kWh × ' + nf0.format(SET.bat.costKwh) + ' CHF + ' + nf0.format(SET.bat.costFix) + ' CHF de pose'],
