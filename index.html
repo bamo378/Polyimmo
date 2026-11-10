@@ -62,7 +62,8 @@ button{font-family:inherit}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 11px;cursor:pointer;white-space:nowrap;
   position:relative;display:inline-flex;align-items:center;gap:7px;transition:color .15s}
-.tabs button:hover{color:var(--ink)}
+.tabs button:hover,.tabs .tablink:hover{color:var(--ink)}
+.tabs .tablink{display:flex;align-items:center;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 11px;white-space:nowrap;text-decoration:none}
 .tabs button[aria-current="page"]{color:var(--ink)}
 .tabs button[aria-current="page"]::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
 .top-r{display:flex;gap:8px;align-items:center;flex:none}
@@ -383,7 +384,7 @@ body.noscroll{overflow:hidden}
       <button data-v="prod">Production</button>
       <button data-v="fin">Finances</button>
       <button data-v="prix">Marché</button>
-      <button data-v="villa">Villa</button>
+      <a class="tablink" href="villa.html" target="_blank" rel="noopener">Villa BAMO ↗</a>
       <button data-v="saisie">Saisie</button>
       <button data-v="controles">Contrôles <span class="tbadge-n hidden" id="tabBadge">0</span></button>
       <button data-v="rapports">Rapports</button>
