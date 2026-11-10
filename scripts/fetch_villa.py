@@ -71,13 +71,15 @@ D.setdefault("daily", {})
 D.setdefault("p15", {})
 
 if os.environ.get("DIAG"):
-    now = dt.datetime.now(TZ); f0 = iso(now - dt.timedelta(hours=6)); t0 = iso(now)
-    for path, q in [(f"/sites/{SITE}/devices", {"types": "METER"}), (f"/sites/{SITE}/devices", {"types": "ALL"}),
-                    (f"/sites/{SITE}", {}), (f"/sites/{SITE}/overview", {}),
-                    (f"/sites/{SITE}/meters/telemetry", {"from": f0, "to": t0}),
-                    (f"/sites/{SITE}/meters/lifetime-energy", {}),
-                    (f"/sites/{SITE}/consumption-energy", {"from": f0, "to": t0, "resolution": "HOUR"})]:
-        print("DIAG", path, q, "=>", json.dumps(get(path, **q))[:1500])
+    now = dt.datetime.now(TZ); day0 = dt.datetime.combine(now.date(), dt.time(), TZ)
+    for q in [{"from": iso(day0 - dt.timedelta(days=30)), "to": iso(day0), "resolution": "DAY"},
+              {"from": iso(day0 - dt.timedelta(days=1)), "to": iso(day0), "resolution": "HOUR"},
+              {"from": iso(day0 - dt.timedelta(days=366)), "to": iso(day0 - dt.timedelta(days=335)), "resolution": "DAY"},
+              {"from": iso(day0 - dt.timedelta(days=4)), "to": iso(day0), "resolution": "HOUR"}]:
+        j = get(f"/sites/{SITE}/meters/telemetry", **q)
+        if not j: print("DIAG", q, "=> rien"); continue
+        summ = {sn: {m: (v.get("unit"), len(v.get("values") or []), sum((x.get("value") or 0) for x in (v.get("values") or [])), (v.get("values") or [{}])[0].get("timestamp")) for m, v in mets.items() if isinstance(v, dict)} for sn, mets in (j.get("meters") or {}).items()}
+        print("DIAG", q["resolution"], q["from"], "=>", json.dumps(summ)[:1500], "| clés:", list(j.keys()))
     raise SystemExit(0)
 if D.get("meters") == []: D.pop("meters")   # nouvelle détection
 # Compteurs (meters)
