@@ -8,6 +8,10 @@ on:
         description: "Code d'autorisation SolarEdge (seulement la première fois)"
         required: false
         default: ""
+      diag:
+        description: "Diagnostic (laisser vide)"
+        required: false
+        default: ""
 permissions:
   contents: write
 concurrency:
@@ -28,6 +32,7 @@ jobs:
           SOLAREDGE_CLIENT_ID: ${{ secrets.SOLAREDGE_CLIENT_ID }}
           SOLAREDGE_CLIENT_SECRET: ${{ secrets.SOLAREDGE_CLIENT_SECRET }}
           AUTH_CODE: ${{ github.event.inputs.code }}
+          DIAG: ${{ github.event.inputs.diag }}
         run: python scripts/fetch_villa.py
       - name: Enregistrer
         if: always()

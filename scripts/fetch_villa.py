@@ -70,6 +70,16 @@ D.setdefault("site", {"name": "Villa", "kwp": 30.16, "commissioned": "2022-11-17
 D.setdefault("daily", {})
 D.setdefault("p15", {})
 
+if os.environ.get("DIAG"):
+    now = dt.datetime.now(TZ); f0 = iso(now - dt.timedelta(hours=6)); t0 = iso(now)
+    for path, q in [(f"/sites/{SITE}/devices", {"types": "METER"}), (f"/sites/{SITE}/devices", {"types": "ALL"}),
+                    (f"/sites/{SITE}", {}), (f"/sites/{SITE}/overview", {}),
+                    (f"/sites/{SITE}/meters/telemetry", {"from": f0, "to": t0}),
+                    (f"/sites/{SITE}/meters/lifetime-energy", {}),
+                    (f"/sites/{SITE}/consumption-energy", {"from": f0, "to": t0, "resolution": "HOUR"})]:
+        print("DIAG", path, q, "=>", json.dumps(get(path, **q))[:1500])
+    raise SystemExit(0)
+if D.get("meters") == []: D.pop("meters")   # nouvelle détection
 # Compteurs (meters)
 if "meters" not in D:
     inv = get(f"/sites/{SITE}/devices")
@@ -78,7 +88,7 @@ if "meters" not in D:
     def walk(o):
         if isinstance(o, dict):
             sn = o.get("serialNumber") or o.get("sn")
-            t = json.dumps({k: o.get(k) for k in ("type", "deviceType", "model", "name", "category", "meterType", "function")}).upper()
+            t = " ".join(str(o.get(k) or "") for k in ("type", "deviceType", "category")).upper()
             if sn and "METER" in t: found.append(sn)
             for v in o.values(): walk(v)
         elif isinstance(o, list):
