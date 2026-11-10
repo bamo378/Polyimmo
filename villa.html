@@ -443,18 +443,21 @@ body.noscroll{overflow:hidden}
   <section data-view="batterie" class="hidden">
     <div class="vb-hero"><div><h1>Simulateur de batterie</h1><p>Chaque heure rejouée avec une batterie de la taille choisie</p></div><div class="chips" id="bPer"></div></div>
     <p class="calead" id="bLead"></p>
-    <section class="card"><div class="card-h"><div><h2>Taille de batterie</h2><p class="sub">★ = la plus rentable avec le tarif GESA</p></div><div class="chips" id="bSizes"></div></div><div class="grid g3" id="bKpis"></div></section>
+    <section class="card"><div class="card-h"><div><h2>Gestion de la batterie</h2><p class="sub">Intelligente : la batterie est pilotée heure par heure pour minimiser la facture, avec les prix du lendemain (comme un gestionnaire d'énergie)</p></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="chips" id="bMode"><button data-r="simple">Simple (autoconsommation)</button><button data-r="smart">Intelligente (optimisée)</button></div>
+      <label class="toggle"><input type="checkbox" id="bGrid"> Recharger aussi depuis le réseau quand c'est bon marché</label></div></div></section>
+    <section class="card mt"><div class="card-h"><div><h2>Taille de batterie</h2><p class="sub">★ = la plus rentable avec le tarif GESA</p></div><div class="chips" id="bSizes"></div></div><div class="grid g3" id="bKpis"></div></section>
     <div class="grid g2 mt">
       <section class="card"><div class="card-h"><div><h2>Retour sur investissement</h2><p class="sub" id="bCumSub"></p></div></div><div class="chart"><canvas id="cBatCum"></canvas></div></section>
       <section class="card"><div class="card-h"><div><h2>Économies par année</h2><p class="sub">CHF économisés chaque année avec la batterie choisie (* = année incomplète)</p></div></div><div class="chart"><canvas id="cBatYear"></canvas></div></section>
     </div>
     <section class="card mt"><div class="card-h"><div><h2>Rentabilité selon la taille</h2><p class="sub">Gain net actualisé sur la durée de vie (économies − prix), CHF</p></div></div><div class="chart" style="height:320px"><canvas id="cBatNpv"></canvas></div></section>
     <section class="card mt"><div class="card-h"><div><h2>Hypothèses de la batterie</h2><p class="sub">Prix public 2025-2026 en Suisse : environ 590 CHF/kWh installé pour 15 kWh (Swissolar), moins pour les grandes capacités. Par défaut : prix installateur (350 CHF/kWh + 1 500 CHF).</p></div></div><div id="bForm" class="capanel"></div>
-      <p class="note">Gestion simulée : la batterie se charge avec le surplus solaire et se décharge quand la maison consomme. Avec le tarif dynamique, elle garde en plus son énergie pour les heures les plus chères de la journée. Les tarifs utilisés sont ceux de l'onglet Tarifs.</p></section>
+      <p class="note">Simple : la batterie se charge avec le surplus solaire et se décharge dès que la maison consomme. Intelligente : chaque jour, la charge et la décharge sont optimisées pour payer le moins possible avec le tarif choisi (achat et vente heure par heure), en supposant la production et la consommation de la journée bien prévues : c'est le meilleur résultat atteignable. Les tarifs utilisés sont ceux de l'onglet Tarifs.</p></section>
     <section class="card mt"><div class="card-h"><div><h2>Comparaison des tailles</h2></div></div><div class="tablewrap" style="max-height:none"><table id="bTable"></table></div></section>
   </section>
   <p class="note" style="margin:28px 0">Sources : SolarEdge Monitoring API (production et consommation de la villa), energy-charts.info (prix du marché, CC BY 4.0), BCE (taux de change), facture GESA (tarifs).</p>
 </main>
-<script src="villa-app.js?v=3"></script>
+<script src="villa-app.js?v=4"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@ const KEY = 'vb-settings-v3';
 const DEF = {
   tariff:{ht:26.16, bt:20.25, sell:9.00, hkn:0, vat:8.1, wdStart:7, wdEnd:20, satHT:false},   // GESA « Double interruptible » (facture T1 2025, HT) — reprise 2026
   dyn:{gridHT:12.23, gridBT:8.24, sellFee:0, floor:false, zone:'CH'},   // dynamique : spot + acheminement + services système + taxes (facture GESA)
-  bat:{costKwh:350, costFix:1500, life:15, deg:2, eff:90, cRate:0.5, maxKw:25, rate:2, sizes:'0,5,10,15,20,25,30,35,40,45,50,55'},
+  bat:{costKwh:350, costFix:1500, life:15, deg:2, eff:90, cRate:0.5, maxKw:25, rate:2, mode:'smart', gridCharge:false, sizes:'0,5,10,15,20,25,30,35,40,45,50,55'},
 };
 let SET = load();
 function load(){ let s = null; try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){}
@@ -76,7 +76,7 @@ async function loadPrices(){
 /* ---------- séries horaires : production / consommation / achat / vente ---------- */
 function hourlySeries(){
   const src = V.h && Object.keys(V.h).length ? V.h : null, out = [];
-  if (src) for (const [k, row] of Object.entries(src)) { const [p, c, im, ex] = row; if (p == null && c == null) continue; out.push({ms:keyMs(k), p:+p || 0, c:+c || 0, im, ex}); }
+  if (src) for (const [k, row] of Object.entries(src)) { const [p, c, im, ex] = row; if (p == null || c == null) continue; out.push({ms:keyMs(k), p:+p || 0, c:+c || 0, im, ex}); }
   else if (V.p15) { const m = new Map(); for (const [k, [p, c]] of Object.entries(V.p15)) { const ms = keyMs(k), h = ms - ms % 36e5, x = m.get(h) || {ms:h, p:0, c:0}; x.p += (+p || 0)/4; x.c += (+c || 0)/4; m.set(h, x); } out.push(...m.values()); }
   out.sort((a,b) => a.ms - b.ms);
   out.forEach(x => { const n = x.c - x.p; x.imp = x.im != null ? +x.im : Math.max(0, n); x.exp = x.ex != null ? +x.ex : Math.max(0, -n); const L = loc(x.ms); x.d = L.d; x.h = L.h; x.wd = L.wd; });
@@ -294,28 +294,50 @@ function formTariff(){
 }
 
 /* ---------- 4. Batterie ---------- */
-function simulate(H, P, cap, smart){
-  // autoconsommation : charge avec le surplus solaire, décharge quand la maison consomme.
-  // smart (tarif dynamique) : la décharge est réservée aux heures plus chères que la médiane du jour.
-  const B = SET.bat, eta = Math.sqrt(B.eff/100), pmax = Math.min(+B.maxKw || 99, Math.max(0.5, cap * B.cRate)), usable = cap * 0.9;
-  const T = SET.tariff, Y = SET.dyn, vat = 1 + T.vat/100;
-  let soc = usable * 0.3, thr = -1e9, day = null;
-  const r = {imp:0, exp:0, gesa:0, dyn:0, cyc:0, n:0, Y:new Map()};
-  for (let i = 0; i < H.length; i++) {
-    const x = H[i], spot = P.hour.get(x.ms); if (spot == null) continue;
-    if (smart && x.d !== day) { day = x.d; const ps = []; for (let j = i; j < H.length && H[j].d === day; j++) { const v = P.hour.get(H[j].ms); if (v != null) ps.push(v); } ps.sort((a,b) => a - b); thr = ps.length ? ps[Math.floor(ps.length/2)] : -1e9; }
-    let net = x.c - x.p;
-    if (cap > 0) {
-      if (net < 0) { const ch = Math.min(-net, pmax, (usable - soc) / eta); soc += ch * eta; net += ch; r.cyc += ch; }
-      else if (net > 0 && (!smart || spot >= thr)) { const dc = Math.min(net, pmax, soc * eta); soc -= dc / eta; net -= dc; }
-    }
-    const imp = Math.max(0, net), exp = Math.max(0, -net), ht = isHT(x);
-    const g = imp * (ht ? T.ht : T.bt) * vat / 100 - exp * (T.sell + T.hkn) / 100;
-    const dn = imp * (spot + (ht ? Y.gridHT : Y.gridBT)) * vat / 100 - exp * (Y.floor ? Math.max(0, spot - Y.sellFee) : spot - Y.sellFee) / 100;
-    r.imp += imp; r.exp += exp; r.n++; r.gesa += g; r.dyn += dn;
-    const yk = x.d.slice(0,4), ya = r.Y.get(yk) || {gesa:0, dyn:0, n:0, imp:0, cons:0}; ya.gesa += g; ya.dyn += dn; ya.n++; ya.imp += imp; ya.cons += x.c; r.Y.set(yk, ya);
+function prices(x, P, tariff){ // prix d'achat / de vente (CHF/kWh) de l'heure pour le tarif choisi
+  const T = SET.tariff, Y = SET.dyn, vat = 1 + T.vat/100, ht = isHT(x), spot = P.hour.get(x.ms);
+  if (spot == null) return null;
+  if (tariff === 'gesa') return [(ht ? T.ht : T.bt) * vat / 100, (T.sell + T.hkn) / 100];
+  return [(spot + (ht ? Y.gridHT : Y.gridBT)) * vat / 100, (Y.floor ? Math.max(0, spot - Y.sellFee) : spot - Y.sellFee) / 100];
+}
+function run(H, P, cap, tariff, mode){
+  const B = SET.bat, eta = Math.sqrt(B.eff/100), pm = Math.min(+B.maxKw || 99, Math.max(0.5, cap * B.cRate)), us = cap * 0.9;
+  const r = {cost:0, imp:0, exp:0, cyc:0, n:0, Y:new Map()};
+  const add = (x, grid, bs) => { const c = grid > 0 ? grid * bs[0] : grid * bs[1]; r.cost += c; if (grid > 0) r.imp += grid; else r.exp -= grid; r.n++;
+    const k = x.d.slice(0,4), y = r.Y.get(k) || {cost:0, n:0, imp:0, cons:0}; y.cost += c; y.n++; if (grid > 0) y.imp += grid; y.cons += x.c; r.Y.set(k, y); };
+  if (!cap || mode !== 'smart') { // autoconsommation simple
+    let soc = us * 0.3;
+    for (const x of H) { const bs = prices(x, P, tariff); if (!bs) continue; let net = x.c - x.p;
+      if (cap) { if (net < 0) { const ch = Math.min(-net, pm, (us - soc) / eta); soc += ch * eta; net += ch; r.cyc += ch; }
+        else if (net > 0) { const dc = Math.min(net, pm, soc * eta); soc -= dc / eta; net -= dc; } }
+      add(x, net, bs); }
+    r.cycles = cap ? r.cyc / us : 0; return r;
   }
-  r.cycles = cap ? r.cyc / usable : 0; return r;
+  // gestion intelligente : chaque jour, avec les prix du lendemain connus (marché day-ahead) et la production /
+  // consommation de la journée, on choisit les seuils qui minimisent le coût : la batterie ne se décharge que
+  // quand l'électricité est assez chère, et peut (option) se recharger depuis le réseau aux heures les moins chères.
+  // Le cas « décharge toujours, jamais de recharge réseau » (= gestion simple) fait partie des choix : jamais pire.
+  const gridOK = !!B.gridCharge, days = []; let cur = null;
+  for (const x of H) { const bs = prices(x, P, tariff); if (!bs) continue; if (!cur || cur.d !== x.d) { cur = {d:x.d, hs:[]}; days.push(cur); } cur.hs.push([x, bs]); }
+  let soc = us * 0.3;
+  const sim = (hs, soc0, thrD, thrC, commit) => { let so = soc0, cost = 0, cyc = 0;
+    for (const [x, bs] of hs) { let net = x.c - x.p;
+      if (net < 0) { const ch = Math.min(-net, pm, (us - so) / eta); so += ch * eta; net += ch; cyc += ch; }
+      else if (net > 0 && bs[0] >= thrD) { const dc = Math.min(net, pm, so * eta); so -= dc / eta; net -= dc; }
+      if (gridOK && bs[0] <= thrC && so < us) { const room = Math.max(0, pm - Math.max(0, x.p - x.c)), ch = Math.min(room, (us - so) / eta); so += ch * eta; net += ch; cyc += ch; }
+      cost += net > 0 ? net * bs[0] : net * bs[1]; if (commit) add(x, net, bs); }
+    if (commit) r.cyc += cyc; return {cost, so}; };
+  for (let k = 0; k < days.length; k++) {
+    const hs = days[k].hs, nxt = days[k + 1] ? days[k + 1].hs : hs;
+    const surplusN = nxt.reduce((a, h) => a + Math.max(0, h[0].p - h[0].c), 0);   // demain, le soleil suffira-t-il à remplir la batterie ?
+    const val = surplusN >= us ? 0 : eta * nxt.reduce((a, h) => a + h[1][0], 0) / nxt.length * 0.85 * (1 - surplusN / us);   // valeur d'un kWh gardé pour demain
+    const buys = [...new Set(hs.map(h => h[1][0]))].sort((a, b) => a - b);
+    const thD = [-1e9, ...buys], thC = gridOK ? [-1e9, ...buys.slice(0, Math.max(1, Math.ceil(buys.length / 3)))] : [-1e9];
+    let best = null;
+    for (const d of thD) for (const c of thC) { if (c >= d && c > -1e9) continue; const o = sim(hs, soc, d, c, false), tot = o.cost - o.so * val; if (!best || tot < best.tot - 1e-9) best = {tot, d, c}; }
+    soc = sim(hs, soc, best.d, best.c, true).so;
+  }
+  r.cycles = r.cyc / us; return r;
 }
 function finance(saving1, cap){
   const B = SET.bat, inv = cap ? cap * B.costKwh + B.costFix : 0, r = B.rate/100, cf = [-inv]; let npv = -inv, cum = -inv, pay = null, total = 0;
@@ -329,18 +351,20 @@ async function renderBattery(){
   perChips('bPer');
   const pr = period(H0, S.per), H = pr.H, nd = H.length / 24, scale = 365 / nd;
   const sizes = SET.bat.sizes.split(/[,; ]+/).map(Number).filter(v => v >= 0 && isFinite(v)); if (!sizes.includes(0)) sizes.unshift(0); sizes.sort((a,b) => a - b);
-  const base = simulate(H, P, 0, false), cons = H.reduce((a,x) => a + x.c, 0);
-  const res = sizes.map(c => { const s = simulate(H, P, c, false), sm = c ? simulate(H, P, c, true) : s;
-    const sg = (base.gesa - s.gesa) * scale, sd = (base.dyn - Math.min(s.dyn, sm.dyn)) * scale;
-    return {c, s, sm, sg, sd, fg:finance(sg, c), fd:finance(sd, c), aut:cons ? (1 - s.imp / cons) * 100 : 0}; });
+  const mode = SET.bat.mode || 'smart', cons = H.reduce((a,x) => a + x.c, 0);
+  chips('bMode', mode); $('bGrid').checked = !!SET.bat.gridCharge;
+  const bG = run(H, P, 0, 'gesa', 'simple'), bD = run(H, P, 0, 'dyn', 'simple'), base = {imp:bG.imp, Y:bG.Y};
+  const res = sizes.map(c => { const g = run(H, P, c, 'gesa', mode), d = run(H, P, c, 'dyn', mode);
+    const sg = (bG.cost - g.cost) * scale, sd = (bD.cost - d.cost) * scale;
+    return {c, s:g, sm:d, sg, sd, fg:finance(sg, c), fd:finance(sd, c), aut:cons ? (1 - g.imp / cons) * 100 : 0}; });
   const cand = res.filter(x => x.c > 0), best = k => cand.reduce((a,x) => x[k].npv > a[k].npv ? x : a, cand[0]);
   const bestG = best('fg'), bestD = best('fd');
   if (S.bsize == null || !sizes.includes(S.bsize)) S.bsize = bestG.c;
   const sel = res.find(x => x.c === S.bsize) || cand[0], L = SET.bat.life;
   const verdict = f => f.npv > 0 ? `<b class="pos">rentable</b> : remboursée en <b>${nf1.format(f.pay)} ans</b>, puis ${nf0.format(f.net)} CHF gagnés sur ${L} ans` : `<b class="neg">pas rentable</b> sur ${L} ans${f.pay ? ' (remboursée en ' + nf1.format(f.pay) + ' ans, mais le gain actualisé reste négatif)' : ''}`;
   const synth = H.filter(x => x.synth).length;
-  $('bLead').innerHTML = `Calcul sur la période <b>${pr.label}</b> (${nf0.format(nd)} jours, ramené à une année). Avec le <b>tarif GESA actuel</b>, la taille la plus rentable est <b>${nf0.format(bestG.c)} kWh</b> : ${verdict(bestG.fg)}. ` +
-    `Avec un <b>tarif dynamique</b> et une gestion intelligente, c'est <b>${nf0.format(bestD.c)} kWh</b> : ${verdict(bestD.fd)}.` +
+  $('bLead').innerHTML = `Gestion <b>${mode === 'smart' ? 'intelligente' + (SET.bat.gridCharge ? ' avec recharge depuis le réseau' : '') : 'simple (autoconsommation)'}</b>. Calcul sur la période <b>${pr.label}</b> (${nf0.format(nd)} jours, ramené à une année). Avec le <b>tarif GESA actuel</b>, la taille la plus rentable est <b>${nf0.format(bestG.c)} kWh</b> : ${verdict(bestG.fg)}. ` +
+    `Avec un <b>tarif dynamique</b>, c'est <b>${nf0.format(bestD.c)} kWh</b> : ${verdict(bestD.fd)}.` +
     (synth ? ` <span class="muted">${nf0.format(synth/H.length*100)} % des heures sont reconstruites à partir de vos totaux journaliers et profils horaires mesurés.</span>` : '');
   $('bSizes').innerHTML = cand.map(x => `<button data-r="${x.c}" aria-pressed="${x.c === S.bsize}">${nf0.format(x.c)} kWh${x === bestG ? ' ★' : ''}</button>`).join('');
   $('bKpis').innerHTML = [
@@ -349,7 +373,7 @@ async function renderBattery(){
     ['Retour sur investissement', sel.fg.pay ? nf1.format(sel.fg.pay) + '<small>ans</small>' : '<span class="neg">jamais</span>', 'GESA · ' + (sel.fd.pay ? nf1.format(sel.fd.pay) + ' ans en dynamique' : 'jamais en dynamique')],
     [`Économies totales sur ${L} ans`, nf0.format(sel.fg.total) + '<small>CHF</small>', `gain net <b class="${sel.fg.net >= 0 ? 'pos' : 'neg'}">${sgn(sel.fg.net)} CHF</b> (GESA)`],
     ['Autonomie', nf0.format(sel.aut) + '<small>%</small>', 'contre ' + nf0.format(res[0].aut) + ' % sans batterie'],
-    ['Cycles par an ' + help('Charges complètes équivalentes par an. Une batterie lithium (LFP) supporte en général 6 000 cycles ou plus.'), nf0.format(sel.s.cycles * scale) + '<small>cycles</small>', 'achat réseau évité : ' + nf0.format((base.imp - sel.s.imp) * scale) + ' kWh/an'],
+    ['Cycles par an ' + help('Charges complètes équivalentes par an. Une batterie lithium (LFP) supporte en général 6 000 cycles ou plus.'), nf0.format(sel.s.cycles * scale) + '<small>cycles</small>', 'achat réseau évité : ' + nf0.format((bG.imp - sel.s.imp) * scale) + ' kWh/an (GESA)'],
   ].map(kpi).join('');
   const lab = res.map(x => nf0.format(x.c) + ' kWh');
   chart('cBatNpv', {type:'bar', data:{labels:lab, datasets:[
@@ -367,7 +391,7 @@ async function renderBattery(){
       o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + sgn(c.parsed.y) + ' CHF'; })});
   $('bCumSub').textContent = `Batterie de ${nf0.format(sel.c)} kWh : on part du prix d'achat (${nf0.format(sel.fg.inv)} CHF) et on ajoute les économies de chaque année. La courbe passe au-dessus de zéro quand la batterie est remboursée.`;
   // économies par année réelle de la période (taille choisie)
-  const yk = [...base.Y.keys()].sort(), yv = yk.map(y => { const b = base.Y.get(y), s1 = sel.s.Y.get(y) || b, s2 = sel.sm.Y.get(y) || s1; return {y, days:b.n / 24, g:b.gesa - s1.gesa, d:b.dyn - Math.min(s1.dyn, s2.dyn)}; });
+  const yk = [...bG.Y.keys()].sort(), yv = yk.map(y => { const g0 = bG.Y.get(y), d0 = bD.Y.get(y) || g0, g1 = sel.s.Y.get(y) || g0, d1 = sel.sm.Y.get(y) || d0; return {y, days:g0.n / 24, g:g0.cost - g1.cost, d:d0.cost - d1.cost}; });
   chart('cBatYear', {type:'bar', data:{labels:yv.map(x => x.y + (x.days < 360 ? '*' : '')), datasets:[
     barDs('Économies · GESA', yv.map(x => Math.round(x.g)), css('--sun'), 'a', {stack:undefined}), barDs('Économies · dynamique', yv.map(x => Math.round(x.d)), css('--s1'), 'b', {stack:undefined})]},
     options:opts('CHF', o => { o.plugins.tooltip.callbacks.afterBody = it => { const x = yv[it[0].dataIndex]; return x.days < 360 ? nf0.format(x.days) + ' jours seulement dans la période' : ''; }; })});
@@ -393,6 +417,8 @@ onChips('eSeason', r => { S.season = r; renderEnergy(); });
 onChips('tRange', r => { S.per = r; renderTariffs(); });
 onChips('bSizes', r => { S.bsize = +r; renderBattery(); });
 onChips('bPer', r => { S.per = r; renderBattery(); });
+onChips('bMode', r => { SET.bat.mode = r; save(); renderBattery(); });
+$('bGrid').addEventListener('change', e => { SET.bat.gridCharge = e.target.checked; save(); renderBattery(); });
 loadAll().then(() => { setView(location.hash.slice(1) || 'dash'); window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (v && v !== S.view) setView(v); }); });
-window.VB = {simulate, costs, hourlySeries, get V(){ return V; }, loadPrices};
+window.VB = {run, costs, fullSeries, hourlySeries, get V(){ return V; }, loadPrices};
 })();
