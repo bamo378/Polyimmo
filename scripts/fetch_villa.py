@@ -131,7 +131,7 @@ D["p15"] = {k: v for k, v in sorted(D["p15"].items()) if k >= lim}
 #    rattrapage progressif vers le passé (BACK appels max par passage) pour rester dans l'offre gratuite
 if not D.get("hMeters"): D["h"] = {}; D.pop("hFrom", None)
 D.setdefault("h", {})
-BACK = int(os.environ.get("HOURLY_BACKFILL", "240"))
+BACK = int(os.environ.get("HOURLY_BACKFILL") or "240")
 def hourly(d):
     f = dt.datetime.combine(d, dt.time(), TZ)
     end = dt.datetime.combine(d + dt.timedelta(days=1), dt.time(), TZ)

@@ -8,6 +8,10 @@ on:
         description: "Code d'autorisation SolarEdge (seulement la première fois)"
         required: false
         default: ""
+      backfill:
+        description: "Appels max pour l'historique horaire (laisser vide)"
+        required: false
+        default: ""
       diag:
         description: "Diagnostic (laisser vide)"
         required: false
@@ -20,7 +24,7 @@ concurrency:
 jobs:
   villa:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,6 +37,7 @@ jobs:
           SOLAREDGE_CLIENT_SECRET: ${{ secrets.SOLAREDGE_CLIENT_SECRET }}
           AUTH_CODE: ${{ github.event.inputs.code }}
           DIAG: ${{ github.event.inputs.diag }}
+          HOURLY_BACKFILL: ${{ github.event.inputs.backfill || '240' }}
         run: python scripts/fetch_villa.py
       - name: Enregistrer
         if: always()
