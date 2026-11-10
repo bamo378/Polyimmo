@@ -122,7 +122,7 @@ const isHT = x => { const T = SET.tariff; if (x.wd === 0) return false; if (x.wd
 
 /* =================== VUES =================== */
 const S = {view:'dash', range:'30', day:null, per:'12m', bsize:null};
-const VIEWS = ['dash','energie','tarifs','batterie'];
+const VIEWS = ['dash','energie','tarifs','batterie','scenarios'];
 function setView(v){ if (!VIEWS.includes(v)) v = 'dash'; S.view = v;
   document.querySelectorAll('#vtabs button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v ? 'page' : 'false'));
   document.querySelectorAll('main [data-view]').forEach(s => s.classList.toggle('hidden', s.dataset.view !== v));
@@ -130,7 +130,7 @@ function setView(v){ if (!VIEWS.includes(v)) v = 'dash'; S.view = v;
 async function render(){
   if (!V || !V.daily || !Object.keys(V.daily).length) { $('vbEmpty').classList.remove('hidden'); document.querySelectorAll('main [data-view]').forEach(s => s.classList.add('hidden')); return; }
   $('vbEmpty').classList.add('hidden');
-  ({dash:renderDash, energie:renderEnergy, tarifs:renderTariffs, batterie:renderBattery})[S.view]();
+  ({dash:renderDash, energie:renderEnergy, tarifs:renderTariffs, batterie:renderBattery, scenarios:renderScenarios})[S.view]();
 }
 const derive = x => { const prod = +x.prod || 0, cons = +x.cons || 0, imp = +x.imp || 0, exp = +x.exp || 0, self = Math.max(0, prod - exp);
   return {prod, cons, imp, exp, self, selfPct:prod ? self/prod*100 : null, autPct:cons ? Math.max(0, cons - imp)/cons*100 : null}; };
@@ -408,6 +408,65 @@ function formBattery(){
   $('bForm').addEventListener('input', e => { const i = e.target; if (!i.dataset.k) return; SET.bat[i.dataset.k] = i.dataset.k === 'sizes' ? i.value : +i.value; save(); clearTimeout(S._b); S._b = setTimeout(renderBattery, 300); });
 }
 
+/* ---------- 5. Scénarios : toutes les combinaisons sur les mêmes graphiques ---------- */
+const SCEN = [
+  {k:'g9',  label:'GESA · vente 9 ct (2026)',            tariff:'gesa', sell:'fixed',  grid:false, col:'--sun'},
+  {k:'gm',  label:'GESA · vente au prix du marché (2027)', tariff:'gesa', sell:'market', grid:false, col:'--s3'},
+  {k:'dy',  label:'Tout dynamique',                        tariff:'dyn',  sell:'market', grid:false, col:'--s1'},
+  {k:'dyg', label:'Tout dynamique + recharge réseau',      tariff:'dyn',  sell:'market', grid:true,  col:'--bad'},
+];
+function withScen(sc, fn){ const t = SET.tariff.sellMode, g = SET.bat.gridCharge; SET.tariff.sellMode = sc.sell; SET.bat.gridCharge = sc.grid; try { return fn(); } finally { SET.tariff.sellMode = t; SET.bat.gridCharge = g; } }
+const life = (sv) => { let t = 0; for (let i = 0; i < SET.bat.life; i++) t += sv * Math.pow(1 - SET.bat.deg/100, i); return t; };
+async function renderScenarios(){
+  const H0 = fullSeries(); if (!H0.length) { $('sLead').textContent = 'Données horaires en cours de récupération.'; return; }
+  const P = await loadPrices(); perChips('sPer');
+  const pr = period(H0, S.per), H = pr.H, scale = 365 / (H.length / 24), B = SET.bat;
+  const sizes = [0,5,10,15,20,25,30,35,40,45,50,55];
+  const R = SCEN.map(sc => withScen(sc, () => { const b0 = run(H, P, 0, sc.tariff, 'simple');
+    const rows = sizes.map(c => { const m = c ? run(H, P, c, sc.tariff, 'smart') : b0, sv = (b0.cost - m.cost) * scale, inv = c ? c * B.costKwh + B.costFix : 0, tot = life(sv);
+      return {c, sv, inv, tot, net:tot - inv, annual:b0.cost * scale - tot / B.life + inv / B.life, pay:sv > 0 && c ? inv / sv : null}; });
+    return {sc, base:b0.cost * scale, rows}; }));
+  if (S.ssize == null) S.ssize = 15;
+  $('sSizes').innerHTML = sizes.filter(c => c).map(c => `<button data-r="${c}" aria-pressed="${c === S.ssize}">${c} kWh</button>`).join('');
+  const sel = R.map(r => ({...r, x:r.rows.find(x => x.c === S.ssize)}));
+  // meilleure combinaison = coût annuel le plus bas (électricité + batterie amortie)
+  const all = R.flatMap(r => r.rows.map(x => ({sc:r.sc, ...x}))), best = all.reduce((a, x) => x.annual < a.annual ? x : a);
+  const cheapNo = R.reduce((a, r) => r.base < a.base ? r : a);
+  $('sLead').innerHTML = `Sur la période <b>${pr.label}</b>, la combinaison la moins chère est <b>${best.sc.label}${best.c ? ' avec une batterie de ' + best.c + ' kWh' : ' sans batterie'}</b> : <b>${nf0.format(best.annual)} CHF par an</b> d'électricité${best.c ? ', batterie comprise (amortie sur ' + B.life + ' ans)' : ''}. ` +
+    (best.c ? `Sans batterie, le moins cher est <b>${cheapNo.sc.label}</b> (${nf0.format(cheapNo.base)} CHF/an).` : `Avec les prix de batterie actuels, aucune batterie ne fait baisser le coût total sur la durée de vie : regardez le graphique « Selon le prix de la batterie » pour voir à partir de quel prix ça change.`);
+  const ds = (fn, extra) => R.map(r => lineDs(r.sc.label, fn(r), css(r.sc.col), Object.assign({pointRadius:2.5}, extra || {})));
+  const zeroLine = o => { o.scales.y.beginAtZero = false; o.scales.y.grid.color = c => c.tick.value === 0 ? css('--ink-2') : css('--grid'); o.scales.y.ticks.callback = v => nf0.format(v); };
+  // 1. gain net selon la taille
+  chart('cS1', {type:'line', data:{labels:sizes.map(c => c + ' kWh'), datasets:ds(r => r.rows.map(x => Math.round(x.net)))},
+    options:opts('CHF', o => { zeroLine(o); o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + sgn(c.parsed.y) + ' CHF'; })});
+  // 2. coût annuel total (électricité + batterie amortie) selon la taille
+  chart('cS2', {type:'line', data:{labels:sizes.map(c => c + ' kWh'), datasets:ds(r => r.rows.map(x => Math.round(x.annual)))},
+    options:opts('CHF', o => { o.scales.y.beginAtZero = false; o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + nf0.format(c.parsed.y) + ' CHF/an'; })});
+  // 3. flux cumulés année par année (taille choisie)
+  const yrs = Array.from({length:B.life + 1}, (_, i) => i ? 'An ' + i : 'Achat');
+  chart('cS3', {type:'line', data:{labels:yrs, datasets:ds(r => { const x = r.rows.find(y => y.c === S.ssize); let cum = -x.inv; return yrs.map((_, i) => i ? Math.round(cum += x.sv * Math.pow(1 - B.deg/100, i - 1)) : Math.round(-x.inv)); })},
+    options:opts('CHF', o => { zeroLine(o); o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + sgn(c.parsed.y) + ' CHF'; })});
+  // 4. gain net selon le prix de la batterie (taille choisie) : seuil de rentabilité
+  const pk = [150,200,250,300,350,400,450,500,550,600,700,800];
+  chart('cS4', {type:'line', data:{labels:pk.map(v => v + ' CHF'), datasets:ds(r => { const x = r.rows.find(y => y.c === S.ssize); return pk.map(v => Math.round(x.tot - (S.ssize * v + B.costFix))); })},
+    options:opts('CHF', o => { zeroLine(o); o.scales.x.title = {display:true, text:'Prix de la batterie par kWh (pose ' + nf0.format(B.costFix) + ' CHF en plus)', color:css('--muted'), font:{size:11}};
+      o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + sgn(c.parsed.y) + ' CHF'; })});
+  const be = sel.map(r => ({l:r.sc.label, v:(r.x.tot - B.costFix) / S.ssize}));
+  $('sBE').innerHTML = be.map(b => `<div class="kpi"><div class="k">${b.l}</div><div class="v num" style="font-size:1.35rem">${nf0.format(Math.max(0, b.v))}<small>CHF/kWh</small></div><div class="d">prix maximal pour être rentable (${S.ssize} kWh)</div></div>`).join('');
+  // 5. sensibilité au prix de reprise (GESA, prix fixe)
+  const sp = [3,4,5,6,7,8,9,10,11,12];
+  const sens = sp.map(v => { const old = SET.tariff.sell; SET.tariff.sell = v; try { return withScen(SCEN[0], () => { const b0 = run(H, P, 0, 'gesa', 'simple'), m = run(H, P, S.ssize, 'gesa', 'smart'); const sv = (b0.cost - m.cost) * scale; return {sv, net:life(sv) - (S.ssize * B.costKwh + B.costFix)}; }); } finally { SET.tariff.sell = old; } });
+  chart('cS5', {type:'line', data:{labels:sp.map(v => v + ' ct'), datasets:[
+    lineDs('Gain net sur ' + B.life + ' ans', sens.map(x => Math.round(x.net)), css('--sun'), {pointRadius:3, fill:{target:{value:0}, above:css('--good') + '22', below:css('--bad') + '18'}}),
+    lineDs('Économie par an', sens.map(x => Math.round(x.sv)), css('--s1'), {pointRadius:3, yAxisID:'y1'})]},
+    options:opts('CHF', o => { zeroLine(o); o.scales.x.title = {display:true, text:'Prix de reprise du solaire injecté (achat au tarif GESA)', color:css('--muted'), font:{size:11}};
+      o.scales.y1 = {position:'right', grid:{display:false}, border:{display:false}, ticks:{color:css('--s1'), font:{size:11}, callback:v => nf0.format(v)}};
+      o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + (c.dataset.yAxisID === 'y1' ? nf0.format(c.parsed.y) + ' CHF/an' : sgn(c.parsed.y) + ' CHF'); })});
+  // tableau croisé
+  $('sTable').innerHTML = '<thead><tr><th class="l">Scénario</th><th>Coût sans batterie</th><th>Économie/an (' + S.ssize + ' kWh)</th><th>Retour</th><th>Gain net ' + B.life + ' ans</th><th>Coût annuel avec batterie</th><th>Meilleure taille</th></tr></thead><tbody>' +
+    sel.map(r => { const bt = r.rows.filter(x => x.c).reduce((a, x) => x.net > a.net ? x : a); return `<tr><td class="l"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${css(r.sc.col)};margin-right:6px"></span>${r.sc.label}</td><td>${nf0.format(r.base)} CHF/an</td><td>${nf0.format(r.x.sv)} CHF</td><td>${r.x.pay ? nf1.format(r.x.pay) + ' ans' : 'jamais'}</td><td class="${r.x.net >= 0 ? 'pos' : 'neg'}">${sgn(r.x.net)} CHF</td><td>${nf0.format(r.x.annual)} CHF/an</td><td>${bt.c} kWh (${sgn(bt.net)} CHF)</td></tr>`; }).join('') + '</tbody>';
+}
+
 /* ---------- démarrage ---------- */
 try { const t = localStorage.getItem('pi-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e){}
 $('themeBtn').onclick = () => { const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), n = cur === 'dark' ? 'light' : 'dark'; r.dataset.theme = n; try { localStorage.setItem('pi-theme', n); } catch(e){} render(); };
@@ -418,6 +477,8 @@ onChips('eSeason', r => { S.season = r; renderEnergy(); });
 onChips('tRange', r => { S.per = r; renderTariffs(); });
 onChips('bSizes', r => { S.bsize = +r; renderBattery(); });
 onChips('bPer', r => { S.per = r; renderBattery(); });
+onChips('sPer', r => { S.per = r; renderScenarios(); });
+onChips('sSizes', r => { S.ssize = +r; renderScenarios(); });
 onChips('bMode', r => { SET.bat.mode = r; save(); renderBattery(); });
 $('bGrid').addEventListener('change', e => { SET.bat.gridCharge = e.target.checked; save(); renderBattery(); });
 loadAll().then(() => { setView(location.hash.slice(1) || 'dash'); window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (v && v !== S.view) setView(v); }); });

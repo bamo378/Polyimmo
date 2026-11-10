@@ -392,6 +392,7 @@ body.noscroll{overflow:hidden}
       <button data-v="energie">Énergie</button>
       <button data-v="tarifs">Tarifs</button>
       <button data-v="batterie">Batterie</button>
+      <button data-v="scenarios">Scénarios</button>
     </nav>
     <div class="top-r">
       <a class="backlink" href="index.html">← PolyImmo</a>
@@ -456,8 +457,25 @@ body.noscroll{overflow:hidden}
       <p class="note">Simple : la batterie se charge avec le surplus solaire et se décharge dès que la maison consomme. Intelligente : chaque jour, la charge et la décharge sont optimisées pour payer le moins possible avec le tarif choisi (achat et vente heure par heure), en supposant la production et la consommation de la journée bien prévues : c'est le meilleur résultat atteignable. Les tarifs utilisés sont ceux de l'onglet Tarifs.</p></section>
     <section class="card mt"><div class="card-h"><div><h2>Comparaison des tailles</h2></div></div><div class="tablewrap" style="max-height:none"><table id="bTable"></table></div></section>
   </section>
+
+  <!-- 5. SCÉNARIOS -->
+  <section data-view="scenarios" class="hidden">
+    <div class="vb-hero"><div><h1>Comparer tous les scénarios</h1><p>Tarif GESA ou dynamique, vente fixe ou au prix du marché, avec ou sans batterie : tout sur les mêmes graphiques</p></div><div class="chips" id="sPer"></div></div>
+    <p class="calead" id="sLead"></p>
+    <section class="card"><div class="card-h"><div><h2>Taille de batterie étudiée</h2><p class="sub">Pour les graphiques « année par année », « prix de la batterie » et « prix de reprise »</p></div><div class="chips" id="sSizes"></div></div></section>
+    <div class="grid g2 mt">
+      <section class="card"><div class="card-h"><div><h2>Gain net selon la taille</h2><p class="sub">Économies sur la durée de vie − prix de la batterie (CHF) · au-dessus de 0 = rentable</p></div></div><div class="chart"><canvas id="cS1"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Coût total de l'électricité par an</h2><p class="sub">Facture nette + batterie amortie · le point le plus bas est la meilleure combinaison</p></div></div><div class="chart"><canvas id="cS2"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Année par année</h2><p class="sub">Trésorerie cumulée depuis l'achat de la batterie : l'année où la courbe croise 0 = remboursée</p></div></div><div class="chart"><canvas id="cS3"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Selon le prix de la batterie</h2><p class="sub">Gain net sur la durée de vie : là où la courbe croise 0 = prix maximal rentable</p></div></div><div class="chart"><canvas id="cS4"></canvas></div></section>
+    </div>
+    <div class="grid g4 mt" id="sBE"></div>
+    <section class="card mt"><div class="card-h"><div><h2>Selon le prix de reprise du solaire</h2><p class="sub">Achat au tarif GESA · plus la reprise est basse, plus garder son électricité dans la batterie rapporte</p></div></div><div class="chart"><canvas id="cS5"></canvas></div></section>
+    <section class="card mt"><div class="card-h"><div><h2>Tableau croisé</h2></div></div><div class="tablewrap" style="max-height:none"><table id="sTable"></table></div>
+      <p class="note">Batterie en gestion intelligente. « Tout dynamique » : achat au prix du marché + réseau et taxes, vente au prix du marché. Les prix de batterie, durée de vie et tarifs viennent des onglets Batterie et Tarifs.</p></section>
+  </section>
   <p class="note" style="margin:28px 0">Sources : SolarEdge Monitoring API (production et consommation de la villa), energy-charts.info (prix du marché, CC BY 4.0), BCE (taux de change), facture GESA (tarifs).</p>
 </main>
-<script src="villa-app.js?v=6"></script>
+<script src="villa-app.js?v=7"></script>
 </body>
 </html>
