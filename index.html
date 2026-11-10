@@ -253,6 +253,15 @@ tr.proj td{color:var(--ink-2)}
 tr.cur td{background:color-mix(in srgb,var(--sun) 8%,transparent)}
 td.neg{color:var(--bad)} td.pos{color:var(--good)}
 .feectl{display:inline-flex;align-items:center;gap:10px;font-size:.84rem;font-weight:600;color:var(--ink-2)}.feectl input{width:150px;accent-color:var(--brand)}
+.calead{font-size:1.05rem;line-height:1.55;margin:4px 0 16px;padding:14px 16px;border-radius:12px;background:var(--surface-2)}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.casetup{margin:14px 0 0;padding:11px 14px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);font-size:.88rem}
+.capanel{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
+.capanel h3{margin:0 0 12px;font-size:.95rem}
+.capanel .form input,.capanel .form select{background:var(--surface)}
+.cadet{margin-top:16px}.cadet summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--ink-2);padding:6px 0}
+tr.proj td{opacity:.72}
+.linkbtn{appearance:none;border:0;background:none;color:var(--brand);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
 #prix .card{transition:opacity .2s} span.muted{color:var(--muted);font-size:.85em;font-weight:500}
 @media (max-width:1000px){#pxKpis,#simKpis{grid-template-columns:1fr 1fr;gap:10px}}@media (max-width:560px){#pxKpis .v,#simKpis .v{font-size:1.15rem!important}#pxKpis .kpi,#simKpis .kpi{padding:12px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
@@ -484,6 +493,27 @@ body.noscroll{overflow:hidden}
   <div class="page-h"><div><h1>Finances</h1><p>Ce que l'installation a rapporté, où en est son remboursement et ce qu'elle devrait rapporter jusqu'en <span id="finEnd">2052</span>.</p></div></div>
   <section class="card"><div class="big-answer" id="finHero"></div></section>
   <div class="grid g4 mt" id="finKpis"></div>
+
+  <section class="card mt" id="cash">
+    <div class="card-h">
+      <div><h2>Trésorerie : ce qu'il reste après la banque</h2><p class="sub">Produits − charges − remboursement du prêt · barres claires = projection</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="chips" id="caGran"><button data-r="y" aria-pressed="true">Par année</button><button data-r="q">Par trimestre</button></div>
+        <div class="chips" id="caRange"><button data-r="past">Jusqu'à aujourd'hui</button><button data-r="5" aria-pressed="true">+ 5 ans</button><button data-r="loan">Durée du prêt</button><button data-r="all">Tout</button></div>
+        <label class="toggle"><input type="checkbox" id="caCum" checked> Cumul</label>
+      </div>
+    </div>
+    <p class="calead" id="caLead"></p>
+    <div class="grid g4" id="caKpis"></div>
+    <div class="chart" style="height:340px;margin-top:14px"><canvas id="cCash"></canvas></div>
+    <p class="casetup" id="caSetup"></p>
+    <div class="grid g2 mt">
+      <div class="capanel"><h3>Mon prêt bancaire</h3><div class="form" id="caLoan"></div><p class="note" id="caLoanInfo"></p></div>
+      <div class="capanel"><h3>Mes charges annuelles</h3><div class="form" id="caCharges"></div><p class="note">Pour les années où vous avez saisi des charges réelles (onglet Saisie), ce sont elles qui sont utilisées. <button class="linkbtn" id="caReset" type="button">Tout remettre à zéro</button></p></div>
+    </div>
+    <details class="cadet"><summary>Voir le détail chiffré</summary><div class="tablewrap" style="max-height:520px"><table id="caTable"></table></div></details>
+    <p class="note">Produits : factures réelles du GRD, puis projection du modèle financier (scénario et hypothèses ci-dessous). Ces réglages sont enregistrés dans votre navigateur.</p>
+  </section>
   <div class="grid g21 mt">
     <section class="card">
       <div class="card-h">
@@ -751,11 +781,12 @@ body.noscroll{overflow:hidden}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
-<script src="entries.js?v=8"></script>
-<script src="app.js?v=8"></script>
-<script src="finance.js?v=8"></script>
-<script src="checks.js?v=8"></script>
-<script src="report.js?v=8"></script>
+<script src="entries.js?v=9"></script>
+<script src="app.js?v=9"></script>
+<script src="finance.js?v=9"></script>
+<script src="checks.js?v=9"></script>
+<script src="report.js?v=9"></script>
 <script src="prix.js?v=9"></script>
+<script src="cash.js?v=1"></script>
 </body>
 </html>
