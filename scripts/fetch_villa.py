@@ -70,91 +70,83 @@ D.setdefault("site", {"name": "Villa", "kwp": 30.16, "commissioned": "2022-11-17
 D.setdefault("daily", {})
 D.setdefault("p15", {})
 
+def telem(f, t, res):
+    """Compteurs du site : achat, vente, consommation (une seule requête pour tous)."""
+    j = get(f"/sites/{SITE}/meters/telemetry", **{"from": iso(f), "to": iso(t), "resolution": res})
+    out = {}
+    for sn, mets in ((j or {}).get("meters") or {}).items():
+        for m, v in mets.items():
+            if not isinstance(v, dict): continue
+            key = {"importEnergy": "imp", "exportEnergy": "exp", "consumptionEnergy": "cons", "consumptionPower": "consW", "importPower": "impW", "exportPower": "expW"}.get(m)
+            if not key: continue
+            u = v.get("unit", "WH"); fac = {"WH": 1/1000, "KWH": 1, "MWH": 1000, "W": 1/1000, "KW": 1, "MW": 1000}.get(u, 1/1000)
+            for x in v.get("values") or []:
+                if x.get("value") is None: continue
+                out.setdefault(x["timestamp"], {})[key] = out.get(x["timestamp"], {}).get(key, 0) + x["value"] * fac
+    return out
+
 if os.environ.get("DIAG"):
-    now = dt.datetime.now(TZ); day0 = dt.datetime.combine(now.date(), dt.time(), TZ)
-    for q in [{"from": iso(day0 - dt.timedelta(days=30)), "to": iso(day0), "resolution": "DAY"},
-              {"from": iso(day0 - dt.timedelta(days=1)), "to": iso(day0), "resolution": "HOUR"},
-              {"from": iso(day0 - dt.timedelta(days=366)), "to": iso(day0 - dt.timedelta(days=335)), "resolution": "DAY"},
-              {"from": iso(day0 - dt.timedelta(days=4)), "to": iso(day0), "resolution": "HOUR"}]:
-        j = get(f"/sites/{SITE}/meters/telemetry", **q)
-        if not j: print("DIAG", q, "=> rien"); continue
-        summ = {sn: {m: (v.get("unit"), len(v.get("values") or []), sum((x.get("value") or 0) for x in (v.get("values") or [])), (v.get("values") or [{}])[0].get("timestamp")) for m, v in mets.items() if isinstance(v, dict)} for sn, mets in (j.get("meters") or {}).items()}
-        print("DIAG", q["resolution"], q["from"], "=>", json.dumps(summ)[:1500], "| clés:", list(j.keys()))
-    raise SystemExit(0)
-if D.get("meters") == []: D.pop("meters")   # nouvelle détection
-# Compteurs (meters)
-if "meters" not in D:
-    inv = get(f"/sites/{SITE}/devices")
-    print("Inventaire :", json.dumps(inv)[:800])
-    found = []
-    def walk(o):
-        if isinstance(o, dict):
-            sn = o.get("serialNumber") or o.get("sn")
-            t = " ".join(str(o.get(k) or "") for k in ("type", "deviceType", "category")).upper()
-            if sn and "METER" in t: found.append(sn)
-            for v in o.values(): walk(v)
-        elif isinstance(o, list):
-            for v in o: walk(v)
-    walk(inv); D["meters"] = list(dict.fromkeys(found)); print("Compteurs :", D["meters"])
+    print("DIAG", json.dumps(telem(dt.datetime.now(TZ) - dt.timedelta(hours=3), dt.datetime.now(TZ), "QUARTER_HOUR"))[:800]); raise SystemExit(0)
 
 today = dt.datetime.now(TZ).date()
 first = dt.date.fromisoformat(D["site"]["commissioned"])
-start = first if not D["daily"] else max(first, today - dt.timedelta(days=4))
-METRICS = {"cons": "consumption-energy", "imp": "import-energy", "exp": "export-energy"}
-# Énergie par jour : production du site + compteurs (fenêtres d'un mois max)
+D.pop("meters", None)
+# 1) Énergie par jour : production (site) + achat / vente / consommation (compteurs), fenêtres d'un mois
+full = not D["daily"] or not D.get("dailyMeters")
+start = first if full else max(first, today - dt.timedelta(days=4))
 a = start
 while a <= today:
     b = min(today, (a.replace(day=28) + dt.timedelta(days=4)).replace(day=1) - dt.timedelta(days=1))
     f, t = dt.datetime.combine(a, dt.time(), TZ), dt.datetime.combine(b + dt.timedelta(days=1), dt.time(), TZ)
-    for ts, v in kwh(get(f"/sites/{SITE}/energy", **{"from": iso(f), "to": iso(t), "resolution": "DAY", "unit": "WH"})).items():
-        D["daily"].setdefault(lday(ts), {})["prod"] = None if v is None else round(v, 2)
-    for key, ep in METRICS.items():
-        for sn in D["meters"]:
-            got = kwh(get(f"/sites/{SITE}/meters/{sn}/{ep}", **{"from": iso(f), "to": iso(t), "resolution": "DAY", "unit": "WH"}))
-            if any(v for v in got.values()):
-                for ts, v in got.items(): D["daily"].setdefault(lday(ts), {})[key] = None if v is None else round(v, 2)
-                break
+    if full and D["daily"] and all(D["daily"].get((a + dt.timedelta(days=i)).isoformat(), {}).get("prod") is not None for i in range((b - a).days + 1)) and b < today - dt.timedelta(days=4):
+        pass   # production déjà connue : seulement les compteurs
+    else:
+        for ts, v in kwh(get(f"/sites/{SITE}/energy", **{"from": iso(f), "to": iso(t), "resolution": "DAY", "unit": "WH"})).items():
+            D["daily"].setdefault(lday(ts), {})["prod"] = None if v is None else round(v, 2)
+    for ts, x in telem(f, t, "DAY").items():
+        dd = D["daily"].setdefault(lday(ts), {})
+        for k in ("imp", "exp", "cons"):
+            if k in x: dd[k] = round(x[k], 2)
     a = b + dt.timedelta(days=1)
+D["dailyMeters"] = True
 
-# Puissance au quart d'heure : production + consommation (fenêtres de 12 h)
-days = 30 if not D["p15"] else 3
+# 2) Quarts d'heure (12 h par requête) : production, consommation, achat, vente — 3 derniers jours (30 au début)
+days = 30 if not D["p15"] or not D.get("p15Meters") else 2
 for n in range(days, -1, -1):
     d = today - dt.timedelta(days=n)
     for half in (0, 12):
         f = dt.datetime.combine(d, dt.time(half), TZ); t = f + dt.timedelta(hours=12)
         if f > dt.datetime.now(TZ): continue
-        q = {"from": iso(f), "to": iso(t), "resolution": "QUARTER_HOUR", "unit": "W"}
-        for ts, v in kw(get(f"/sites/{SITE}/power", **q)).items():
+        for ts, v in kw(get(f"/sites/{SITE}/power", **{"from": iso(f), "to": iso(t), "resolution": "QUARTER_HOUR", "unit": "W"})).items():
             D["p15"].setdefault(utc(ts), [None, None])[0] = None if v is None else round(v, 2)
-        for sn in D["meters"]:
-            got = kw(get(f"/sites/{SITE}/meters/{sn}/consumption-power", **q))
-            if any(v for v in got.values()):
-                for ts, v in got.items(): D["p15"].setdefault(utc(ts), [None, None])[1] = None if v is None else round(v, 2)
-                break
+        for ts, x in telem(f, t, "QUARTER_HOUR").items():
+            row = D["p15"].setdefault(utc(ts), [None, None])
+            if "consW" in x: row[1] = round(x["consW"], 2)
+            elif "cons" in x: row[1] = round(x["cons"] * 4, 2)
+D["p15Meters"] = True
+lim = (today - dt.timedelta(days=400)).isoformat()
+D["p15"] = {k: v for k, v in sorted(D["p15"].items()) if k >= lim}
 
-# Énergie à l'heure (1 an) : production + consommation, fenêtres de 24 h.
-# Rattrapage progressif vers le passé (max BACK appels par passage) pour rester dans l'offre gratuite.
+# 3) Énergie à l'heure sur 1 an : [production, consommation, achat, vente] (24 h par requête)
+#    rattrapage progressif vers le passé (BACK appels max par passage) pour rester dans l'offre gratuite
+if not D.get("hMeters"): D["h"] = {}; D.pop("hFrom", None)
 D.setdefault("h", {})
-BACK = int(os.environ.get("HOURLY_BACKFILL", "260"))
+BACK = int(os.environ.get("HOURLY_BACKFILL", "240"))
 def hourly(d):
     f = dt.datetime.combine(d, dt.time(), TZ); t = f + dt.timedelta(days=1)
-    q = {"from": iso(f), "to": iso(t), "resolution": "HOUR", "unit": "WH"}
-    ok = False
-    for ts, v in kwh(get(f"/sites/{SITE}/energy", **q)).items():
-        D["h"].setdefault(utc(ts), [None, None])[0] = None if v is None else round(v, 3); ok = True
-    for sn in D["meters"]:
-        got = kwh(get(f"/sites/{SITE}/meters/{sn}/consumption-energy", **q))
-        if any(v for v in got.values()):
-            for ts, v in got.items(): D["h"].setdefault(utc(ts), [None, None])[1] = None if v is None else round(v, 3)
-            break
-    return ok
-for n in range(3, -1, -1): hourly(today - dt.timedelta(days=n))      # jours récents
-oldest = dt.date.fromisoformat(D.get("hFrom", today.isoformat()))
+    for ts, v in kwh(get(f"/sites/{SITE}/energy", **{"from": iso(f), "to": iso(t), "resolution": "HOUR", "unit": "WH"})).items():
+        D["h"].setdefault(utc(ts), [None, None, None, None])[0] = None if v is None else round(v, 3)
+    for ts, x in telem(f, t, "HOUR").items():
+        row = D["h"].setdefault(utc(ts), [None, None, None, None])
+        for i, k in ((1, "cons"), (2, "imp"), (3, "exp")):
+            if k in x: row[i] = round(x[k], 3)
+for n in range(2, -1, -1): hourly(today - dt.timedelta(days=n))
+oldest = dt.date.fromisoformat(D.get("hFrom", (today - dt.timedelta(days=2)).isoformat()))
 limit = today - dt.timedelta(days=364)
 used = 0
 while oldest > limit and used + 2 <= BACK:
-    oldest -= dt.timedelta(days=1); hourly(oldest); used += 1 + max(1, len(D["meters"]))
-D["hFrom"] = oldest.isoformat()
+    oldest -= dt.timedelta(days=1); hourly(oldest); used += 2
+D["hFrom"] = oldest.isoformat(); D["hMeters"] = True
 D["h"] = {k: v for k, v in sorted(D["h"].items()) if k >= limit.isoformat()}
 
 D["daily"] = dict(sorted(D["daily"].items()))
