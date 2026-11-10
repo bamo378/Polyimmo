@@ -41,9 +41,9 @@ function loc(ms){ // → {d:'YYYY-MM-DD', h:0-23, wd:0-6}
 const keyMs = k => Date.parse(k.length === 17 ? k.replace('Z', ':00Z') : k);
 
 /* ---------- réglages (enregistrés dans le navigateur) ---------- */
-const KEY = 'vb-settings-v3';
+const KEY = 'vb-settings-v4';
 const DEF = {
-  tariff:{ht:26.16, bt:20.25, sell:9.00, hkn:0, vat:8.1, wdStart:7, wdEnd:20, satHT:false},   // GESA « Double interruptible » (facture T1 2025, HT) — reprise 2026
+  tariff:{ht:26.16, bt:20.25, sell:9.00, hkn:0, vat:8.1, wdStart:7, wdEnd:20, satHT:false, sellMode:'fixed', minSell:5.97},   // GESA « Double interruptible » (facture T1 2025, HT) — reprise 2026
   dyn:{gridHT:12.23, gridBT:8.24, sellFee:0, floor:false, zone:'CH'},   // dynamique : spot + acheminement + services système + taxes (facture GESA)
   bat:{costKwh:350, costFix:1500, life:15, deg:2, eff:90, cRate:0.5, maxKw:25, rate:2, mode:'smart', gridCharge:false, sizes:'0,5,10,15,20,25,30,35,40,45,50,55'},
 };
@@ -117,6 +117,7 @@ function period(H, per){
   return {H:H.filter(x => x.ms > last - 365*864e5), label:'des 12 derniers mois'};
 }
 function perChips(id){ const box = $(id); const html = PERIODS().map(([k, l]) => `<button data-r="${k}" aria-pressed="${k === S.per}">${l}</button>`).join(''); if (box.innerHTML !== html) box.innerHTML = html; }
+const gesaSell = (spot) => { const T = SET.tariff; return (T.sellMode === 'market' ? Math.max(T.minSell, spot == null ? T.minSell : spot) : T.sell) + T.hkn; };   // ct/kWh
 const isHT = x => { const T = SET.tariff; if (x.wd === 0) return false; if (x.wd === 6 && !T.satHT) return false; return x.h >= T.wdStart && x.h < T.wdEnd; };
 
 /* =================== VUES =================== */
@@ -228,7 +229,7 @@ function costs(H, P, sizeOverride){
   const r = {imp:0, exp:0, gesaBuy:0, gesaSell:0, dynBuy:0, dynSell:0, impHT:0, impBT:0, n:0, missing:0, M:new Map()};
   H.forEach(x => {
     const spot = P.hour.get(x.ms); if (spot == null) { r.missing++; return; }
-    const ht = isHT(x), gb = x.imp * (ht ? T.ht : T.bt) * vat / 100, gs = x.exp * (T.sell + T.hkn) / 100;
+    const ht = isHT(x), gb = x.imp * (ht ? T.ht : T.bt) * vat / 100, gs = x.exp * gesaSell(spot) / 100;
     const sellP = Y.floor ? Math.max(0, spot - Y.sellFee) : spot - Y.sellFee;
     const db = x.imp * (spot + (ht ? Y.gridHT : Y.gridBT)) * vat / 100, dsl = x.exp * sellP / 100;
     r.imp += x.imp; r.exp += x.exp; r.gesaBuy += gb; r.gesaSell += gs; r.dynBuy += db; r.dynSell += dsl; r.n++; if (ht) r.impHT += x.imp; else r.impBT += x.imp;
@@ -247,10 +248,10 @@ async function renderTariffs(){
     `Avec un tarif <b>dynamique</b> (prix du marché ${P.zone === 'CH' ? 'suisse' : P.zone} heure par heure + réseau et taxes), ce serait <b>${nf0.format(r.dynNet)} CHF</b> : <b class="${diff <= 0 ? 'pos' : 'neg'}">${diff <= 0 ? 'économie de ' : 'surcoût de '}${nf0.format(Math.abs(diff))} CHF</b>.` + (synth / r.n > 0.01 ? ` <span class="muted">${nf0.format(synth/r.n*100)} % des heures sont reconstruites à partir des totaux journaliers et de vos profils horaires mesurés (SolarEdge ne fournit le détail horaire que sur 12 mois).</span>` : '');
   $('tKpis').innerHTML = [
     ['Acheté au réseau', nf0.format(r.imp) + '<small>kWh</small>', nf0.format(r.imp ? r.impHT/r.imp*100 : 0) + ' % en haut tarif'],
-    ['Vendu au réseau', nf0.format(r.exp) + '<small>kWh</small>', 'repris à ' + nf2.format(SET.tariff.sell + SET.tariff.hkn) + ' ct par GESA'],
+    ['Vendu au réseau', nf0.format(r.exp) + '<small>kWh</small>', SET.tariff.sellMode === 'market' ? 'repris en moyenne ' + nf2.format(r.exp ? r.gesaSell/r.exp*100 : 0) + ' ct (prix du marché, règle 2027)' : 'repris à ' + nf2.format(SET.tariff.sell + SET.tariff.hkn) + ' ct par GESA'],
     ['Prix moyen payé · GESA', nf2.format(r.imp ? r.gesaBuy/r.imp*100 : 0) + '<small>ct/kWh</small>', 'TTC, énergie + réseau + taxes'],
     ['Prix moyen payé · dynamique', nf2.format(r.imp ? r.dynBuy/r.imp*100 : 0) + '<small>ct/kWh</small>', 'TTC, spot + réseau + taxes'],
-    ['Prix moyen de vente · dynamique', nf2.format(r.exp ? r.dynSell/r.exp*100 : 0) + '<small>ct/kWh</small>', 'contre ' + nf2.format(SET.tariff.sell + SET.tariff.hkn) + ' ct avec GESA'],
+    ['Prix moyen de vente · dynamique', nf2.format(r.exp ? r.dynSell/r.exp*100 : 0) + '<small>ct/kWh</small>', 'contre ' + nf2.format(r.exp ? r.gesaSell/r.exp*100 : 0) + ' ct avec GESA'],
     ['Tarif dynamique vs GESA', `<span class="${diff <= 0 ? 'pos' : 'neg'}">${sgn(diff)}</span><small>CHF</small>`, diff <= 0 ? 'moins cher avec le dynamique' : 'plus cher avec le dynamique : GESA reste avantageux'],
   ].map(kpi).join('');
   const mk = [...r.M.keys()].sort(), mv = mk.map(m => r.M.get(m));
@@ -280,15 +281,15 @@ function formTariff(){
       ${field('tariff','ht','Haut tarif (tout compris, HT)', '0.01', 'ct/kWh')}${field('tariff','bt','Bas tarif (tout compris, HT)', '0.01', 'ct/kWh')}
       ${field('tariff','wdStart','Haut tarif dès', '1', 'h')}${field('tariff','wdEnd','Haut tarif jusqu\'à', '1', 'h')}
       <label class="toggle"><input type="checkbox" data-g="tariff" data-k="satHT" ${T.satHT ? 'checked' : ''}> Haut tarif aussi le samedi</label>
-      ${field('tariff','sell','Reprise du solaire injecté', '0.01', 'ct/kWh')}${field('tariff','hkn','Garanties d\'origine (en plus)', '0.01', 'ct/kWh')}${field('tariff','vat','TVA sur l\'achat', '0.1', '%')}
-      </div><p class="note">Par défaut : votre facture GESA du 1er trimestre 2025, tarif « Double interruptible », hors TVA. Tarif normal 26,16 ct = énergie 13,93 + acheminement 9,15 + services système 0,55 + taxes 2,53. Tarif réduit 20,25 ct = 12,01 + 5,16 + 0,55 + 2,53. Reprise 2026 : 9,00 ct (10,38 ct en 2025). Les montants fixes (7,50 + 11,08 CHF/mois) ne changent pas avec une batterie ou un tarif dynamique. Vérifiez les heures du tarif normal sur votre contrat.</p></div>
+      <label>Reprise du solaire injecté<select data-g="tariff" data-k="sellMode"><option value="fixed">Prix fixe GESA (2026)</option><option value="market">Prix du marché au quart d'heure (règle dès 2027)</option></select></label>${field('tariff','sell','Prix fixe de reprise', '0.01', 'ct/kWh')}${field('tariff','minSell','Rétribution minimale (dès 2027)', '0.01', 'ct/kWh')}${field('tariff','hkn','Garanties d\'origine (en plus)', '0.01', 'ct/kWh')}${field('tariff','vat','TVA sur l\'achat', '0.1', '%')}
+      </div><p class="note">Par défaut : votre facture GESA du 1er trimestre 2025, tarif « Double interruptible », hors TVA. Tarif normal 26,16 ct = énergie 13,93 + acheminement 9,15 + services système 0,55 + taxes 2,53. Tarif réduit 20,25 ct = 12,01 + 5,16 + 0,55 + 2,53. Reprise 2026 : 9,00 ct (10,38 ct en 2025). Dès 2027, la loi prévoit une reprise au prix du marché du quart d'heure, avec une rétribution minimale (180 ÷ puissance en kW, soit environ 5,97 ct pour 30,16 kWc) : choisissez « Prix du marché » pour simuler ce cas. Les montants fixes (7,50 + 11,08 CHF/mois) ne changent pas avec une batterie ou un tarif dynamique. Vérifiez les heures du tarif normal sur votre contrat.</p></div>
       <div class="capanel"><h3>Tarif dynamique (simulation)</h3><div class="form">
       ${field('dyn','gridHT','Réseau + taxes en heures pleines', '0.01', 'ct/kWh')}${field('dyn','gridBT','Réseau + taxes en heures creuses', '0.01', 'ct/kWh')}${field('dyn','sellFee','Frais retenus sur la vente', '0.01', 'ct/kWh')}
       <label>Marché de référence<select data-g="dyn" data-k="zone"><option value="CH">Suisse (horaire)</option><option value="DE-LU">Allemagne (15 min)</option><option value="FR">France (15 min)</option></select></label>
       <label class="toggle"><input type="checkbox" data-g="dyn" data-k="floor" ${Y.floor ? 'checked' : ''}> Vente jamais en dessous de 0</label>
       </div><p class="note">Achat = prix du marché de l'heure + acheminement, services système et taxes (selon heures pleines ou creuses, comme sur votre facture), puis TVA. Vente = prix du marché de l'heure (moins les frais). C'est le principe des offres dynamiques qui arrivent en Suisse.</p></div>`;
     $('tForm').dataset.ok = 1;
-    $('tForm').querySelector('select').value = Y.zone;
+    $('tForm').querySelector('select[data-k="zone"]').value = Y.zone; $('tForm').querySelector('select[data-k="sellMode"]').value = T.sellMode;
     $('tForm').addEventListener('input', e => { const i = e.target; if (!i.dataset.g) return; SET[i.dataset.g][i.dataset.k] = i.type === 'checkbox' ? i.checked : i.tagName === 'SELECT' ? i.value : +i.value; if (i.dataset.k === 'zone') PRICE = null; save(); clearTimeout(S._t); S._t = setTimeout(() => S.view === 'tarifs' ? renderTariffs() : renderBattery(), 200); });
   }
 }
@@ -297,7 +298,7 @@ function formTariff(){
 function prices(x, P, tariff){ // prix d'achat / de vente (CHF/kWh) de l'heure pour le tarif choisi
   const T = SET.tariff, Y = SET.dyn, vat = 1 + T.vat/100, ht = isHT(x), spot = P.hour.get(x.ms);
   if (spot == null) return null;
-  if (tariff === 'gesa') return [(ht ? T.ht : T.bt) * vat / 100, (T.sell + T.hkn) / 100];
+  if (tariff === 'gesa') return [(ht ? T.ht : T.bt) * vat / 100, gesaSell(spot) / 100];
   return [(spot + (ht ? Y.gridHT : Y.gridBT)) * vat / 100, (Y.floor ? Math.max(0, spot - Y.sellFee) : spot - Y.sellFee) / 100];
 }
 function run(H, P, cap, tariff, mode){
