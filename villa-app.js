@@ -76,7 +76,7 @@ async function loadPrices(){
 /* ---------- séries horaires : production / consommation / achat / vente ---------- */
 function hourlySeries(){
   const src = V.h && Object.keys(V.h).length ? V.h : null, out = [];
-  if (src) for (const [k, row] of Object.entries(src)) { const [p, c, im, ex] = row; if (p == null || c == null) continue; out.push({ms:keyMs(k), p:+p || 0, c:+c || 0, im, ex}); }
+  if (src) for (const [k, row] of Object.entries(src)) { let [p, c, im, ex] = row; if (c == null) continue; if (p == null) { if (im == null || ex == null) continue; p = Math.max(0, c - im + ex); } /* la nuit, SolarEdge ne renvoie pas de production : elle vaut 0 */ out.push({ms:keyMs(k), p:+p || 0, c:+c || 0, im, ex}); }
   else if (V.p15) { const m = new Map(); for (const [k, [p, c]] of Object.entries(V.p15)) { const ms = keyMs(k), h = ms - ms % 36e5, x = m.get(h) || {ms:h, p:0, c:0}; x.p += (+p || 0)/4; x.c += (+c || 0)/4; m.set(h, x); } out.push(...m.values()); }
   out.sort((a,b) => a.ms - b.ms);
   out.forEach(x => { const n = x.c - x.p; x.imp = x.im != null ? +x.im : Math.max(0, n); x.exp = x.ex != null ? +x.ex : Math.max(0, -n); const L = loc(x.ms); x.d = L.d; x.h = L.h; x.wd = L.wd; });
