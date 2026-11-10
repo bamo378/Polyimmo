@@ -428,7 +428,7 @@ body.noscroll{overflow:hidden}
 
   <!-- 3. TARIFS -->
   <section data-view="tarifs" class="hidden">
-    <div class="vb-hero"><div><h1>Tarif GESA ou tarif dynamique ?</h1><p>Votre vraie consommation et production heure par heure, payées avec chaque tarif</p></div><div class="chips" id="tRange"><button data-r="30">30 jours</button><button data-r="90">90 jours</button><button data-r="12m" aria-pressed="true">12 mois</button></div></div>
+    <div class="vb-hero"><div><h1>Tarif GESA ou tarif dynamique ?</h1><p>Votre vraie consommation et production heure par heure, payées avec chaque tarif</p></div><div class="chips" id="tRange"></div></div>
     <p class="calead" id="tLead"></p>
     <div class="grid g3" id="tKpis"></div>
     <div class="grid g2 mt">
@@ -441,19 +441,20 @@ body.noscroll{overflow:hidden}
 
   <!-- 4. BATTERIE -->
   <section data-view="batterie" class="hidden">
-    <div class="vb-hero"><div><h1>Simulateur de batterie</h1><p>Chaque heure de l'année rejouée avec une batterie de la taille choisie</p></div></div>
+    <div class="vb-hero"><div><h1>Simulateur de batterie</h1><p>Chaque heure rejouée avec une batterie de la taille choisie</p></div><div class="chips" id="bPer"></div></div>
     <p class="calead" id="bLead"></p>
     <section class="card"><div class="card-h"><div><h2>Taille de batterie</h2><p class="sub">★ = la plus rentable avec le tarif GESA</p></div><div class="chips" id="bSizes"></div></div><div class="grid g3" id="bKpis"></div></section>
     <div class="grid g2 mt">
-      <section class="card"><div class="card-h"><div><h2>Rentabilité selon la taille</h2><p class="sub">Gain net actualisé sur la durée de vie (économies − prix), CHF</p></div></div><div class="chart"><canvas id="cBatNpv"></canvas></div></section>
-      <section class="card"><div class="card-h"><div><h2>Autonomie et économie</h2><p class="sub">Plus grand n'est pas toujours plus rentable</p></div></div><div class="chart"><canvas id="cBatAut"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Retour sur investissement</h2><p class="sub" id="bCumSub"></p></div></div><div class="chart"><canvas id="cBatCum"></canvas></div></section>
+      <section class="card"><div class="card-h"><div><h2>Économies par année</h2><p class="sub">CHF économisés chaque année avec la batterie choisie (* = année incomplète)</p></div></div><div class="chart"><canvas id="cBatYear"></canvas></div></section>
     </div>
-    <section class="card mt"><div class="card-h"><div><h2>Hypothèses de la batterie</h2><p class="sub">Prix 2026 typique en Suisse : 500 à 900 CHF par kWh installé</p></div></div><div id="bForm" class="capanel"></div>
+    <section class="card mt"><div class="card-h"><div><h2>Rentabilité selon la taille</h2><p class="sub">Gain net actualisé sur la durée de vie (économies − prix), CHF</p></div></div><div class="chart" style="height:320px"><canvas id="cBatNpv"></canvas></div></section>
+    <section class="card mt"><div class="card-h"><div><h2>Hypothèses de la batterie</h2><p class="sub">Prix public 2025-2026 en Suisse : environ 590 CHF/kWh installé pour 15 kWh (Swissolar), moins pour les grandes capacités. Par défaut : prix installateur (350 CHF/kWh + 1 500 CHF).</p></div></div><div id="bForm" class="capanel"></div>
       <p class="note">Gestion simulée : la batterie se charge avec le surplus solaire et se décharge quand la maison consomme. Avec le tarif dynamique, elle garde en plus son énergie pour les heures les plus chères de la journée. Les tarifs utilisés sont ceux de l'onglet Tarifs.</p></section>
     <section class="card mt"><div class="card-h"><div><h2>Comparaison des tailles</h2></div></div><div class="tablewrap" style="max-height:none"><table id="bTable"></table></div></section>
   </section>
   <p class="note" style="margin:28px 0">Sources : SolarEdge Monitoring API (production et consommation de la villa), energy-charts.info (prix du marché, CC BY 4.0), BCE (taux de change), facture GESA (tarifs).</p>
 </main>
-<script src="villa-app.js?v=2"></script>
+<script src="villa-app.js?v=3"></script>
 </body>
 </html>
