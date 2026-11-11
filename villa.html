@@ -380,6 +380,10 @@ body.noscroll{overflow:hidden}
 .vb-hero{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin:22px 0 16px}
 .vb-hero h1{margin:0;font-size:1.9rem;letter-spacing:-.02em}.vb-hero p{margin:4px 0 0;color:var(--ink-2)}
 .form .toggle{flex-direction:row;align-items:center;gap:10px;grid-column:1/-1}
+.ptable{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pcell{display:flex;flex-direction:column;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.84rem;font-weight:700}
+.pcell input{font:inherit;font-weight:600;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+.pcell em{font-style:normal;font-size:.74rem;color:var(--muted);font-weight:500}
 .backlink{font-size:.84rem;font-weight:600;color:var(--ink-2);text-decoration:none;white-space:nowrap}.backlink:hover{color:var(--brand)}
 </style>
 </head>
@@ -453,7 +457,8 @@ body.noscroll{overflow:hidden}
       <section class="card"><div class="card-h"><div><h2>Économies par année</h2><p class="sub">CHF économisés chaque année avec la batterie choisie (* = année incomplète)</p></div></div><div class="chart"><canvas id="cBatYear"></canvas></div></section>
     </div>
     <section class="card mt"><div class="card-h"><div><h2>Rentabilité selon la taille</h2><p class="sub">Gain net actualisé sur la durée de vie (économies − prix), CHF</p></div></div><div class="chart" style="height:320px"><canvas id="cBatNpv"></canvas></div></section>
-    <section class="card mt"><div class="card-h"><div><h2>Hypothèses de la batterie</h2><p class="sub">Prix public 2025-2026 en Suisse : environ 590 CHF/kWh installé pour 15 kWh (Swissolar), moins pour les grandes capacités. Par défaut : prix installateur (350 CHF/kWh + 1 500 CHF).</p></div></div><div id="bForm" class="capanel"></div>
+    <section class="card mt"><div class="card-h"><div><h2>Prix par taille de batterie</h2><p class="sub">Prix total installé (CHF) pour chaque taille, par exemple d'après une offre. Case vide = prix au kWh ci-dessous.</p></div><button class="linkbtn" id="bPriceReset" type="button">Effacer les prix saisis</button></div><div class="ptable" id="bPrices"></div></section>
+    <section class="card mt"><div class="card-h"><div><h2>Hypothèses de la batterie</h2><p class="sub">Par défaut : 460 CHF par kWh, tout compris. Prix public 2025-2026 en Suisse : environ 590 CHF/kWh installé pour 15 kWh (Swissolar).</p></div></div><div id="bForm" class="capanel"></div>
       <p class="note">Simple : la batterie se charge avec le surplus solaire et se décharge dès que la maison consomme. Intelligente : chaque jour, la charge et la décharge sont optimisées pour payer le moins possible avec le tarif choisi (achat et vente heure par heure), en supposant la production et la consommation de la journée bien prévues : c'est le meilleur résultat atteignable. Les tarifs utilisés sont ceux de l'onglet Tarifs.</p></section>
     <section class="card mt"><div class="card-h"><div><h2>Comparaison des tailles</h2></div></div><div class="tablewrap" style="max-height:none"><table id="bTable"></table></div></section>
   </section>
@@ -476,6 +481,6 @@ body.noscroll{overflow:hidden}
   </section>
   <p class="note" style="margin:28px 0">Sources : SolarEdge Monitoring API (production et consommation de la villa), energy-charts.info (prix du marché, CC BY 4.0), BCE (taux de change), facture GESA (tarifs).</p>
 </main>
-<script src="villa-app.js?v=7"></script>
+<script src="villa-app.js?v=8"></script>
 </body>
 </html>

@@ -41,11 +41,11 @@ function loc(ms){ // → {d:'YYYY-MM-DD', h:0-23, wd:0-6}
 const keyMs = k => Date.parse(k.length === 17 ? k.replace('Z', ':00Z') : k);
 
 /* ---------- réglages (enregistrés dans le navigateur) ---------- */
-const KEY = 'vb-settings-v4';
+const KEY = 'vb-settings-v5';
 const DEF = {
   tariff:{ht:26.16, bt:20.25, sell:9.00, hkn:0, vat:8.1, wdStart:7, wdEnd:20, satHT:false, sellMode:'fixed', minSell:5.97},   // GESA « Double interruptible » (facture T1 2025, HT) — reprise 2026
   dyn:{gridHT:12.23, gridBT:8.24, sellFee:0, floor:false, zone:'CH'},   // dynamique : spot + acheminement + services système + taxes (facture GESA)
-  bat:{costKwh:350, costFix:1500, life:15, deg:2, eff:90, cRate:0.5, maxKw:25, rate:2, mode:'smart', gridCharge:false, sizes:'0,5,10,15,20,25,30,35,40,45,50,55'},
+  bat:{costKwh:460, costFix:0, prices:{}, life:15, deg:2, eff:90, cRate:0.5, maxKw:25, rate:2, mode:'smart', gridCharge:false, sizes:'0,5,10,15,20,25,30,35,40,45,50,55'},
 };
 let SET = load();
 function load(){ let s = null; try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){}
@@ -340,13 +340,14 @@ function run(H, P, cap, tariff, mode){
   }
   r.cycles = r.cyc / us; return r;
 }
+const priceOf = c => { const B = SET.bat, o = B.prices && B.prices[c]; return !c ? 0 : (o != null && o !== '' && isFinite(+o) ? +o : c * B.costKwh + B.costFix); };   // prix total d'une batterie de c kWh
 function finance(saving1, cap){
-  const B = SET.bat, inv = cap ? cap * B.costKwh + B.costFix : 0, r = B.rate/100, cf = [-inv]; let npv = -inv, cum = -inv, pay = null, total = 0;
+  const B = SET.bat, inv = priceOf(cap), r = B.rate/100, cf = [-inv]; let npv = -inv, cum = -inv, pay = null, total = 0;
   for (let y = 1; y <= B.life; y++) { const sv = saving1 * Math.pow(1 - B.deg/100, y - 1); total += sv; npv += sv / Math.pow(1 + r, y); const prev = cum; cum += sv; cf.push(cum); if (pay == null && cum >= 0 && sv > 0) pay = y - 1 + (-prev) / sv; }
   return {inv, npv, pay, total, net:total - inv, cf};
 }
 async function renderBattery(){
-  formBattery(); formTariff();
+  formBattery(); formTariff(); renderPriceTable();
   const H0 = fullSeries(); if (!H0.length) { $('bLead').textContent = 'Données horaires en cours de récupération par le robot.'; return; }
   const P = await loadPrices();
   perChips('bPer');
@@ -369,9 +370,9 @@ async function renderBattery(){
     (synth / H.length > 0.01 ? ` <span class="muted">${nf0.format(synth/H.length*100)} % des heures sont reconstruites à partir de vos totaux journaliers et profils horaires mesurés.</span>` : '');
   $('bSizes').innerHTML = cand.map(x => `<button data-r="${x.c}" aria-pressed="${x.c === S.bsize}">${nf0.format(x.c)} kWh${x === bestG ? ' ★' : ''}</button>`).join('');
   $('bKpis').innerHTML = [
-    ['Prix de la batterie', nf0.format(sel.fg.inv) + '<small>CHF</small>', nf0.format(sel.c) + ' kWh × ' + nf0.format(SET.bat.costKwh) + ' CHF + ' + nf0.format(SET.bat.costFix) + ' CHF de pose'],
+    ['Prix de la batterie', nf0.format(sel.fg.inv) + '<small>CHF</small>', nf0.format(sel.c) + ' kWh · ' + nf0.format(sel.fg.inv / sel.c) + ' CHF/kWh' + (SET.bat.prices && SET.bat.prices[sel.c] != null ? ' (prix saisi)' : '')],
     ['Économie la 1re année', nf0.format(sel.sg) + '<small>CHF</small>', 'GESA · ' + nf0.format(sel.sd) + ' CHF avec un tarif dynamique'],
-    ['Retour sur investissement', sel.fg.pay ? nf1.format(sel.fg.pay) + '<small>ans</small>' : '<span class="neg">jamais</span>', 'GESA · ' + (sel.fd.pay ? nf1.format(sel.fd.pay) + ' ans en dynamique' : 'jamais en dynamique')],
+    ['Retour sur investissement', sel.fg.pay ? nf1.format(sel.fg.pay) + '<small>ans</small>' : '<span class="neg">> ' + SET.bat.life + ' ans</span>', 'GESA · ' + (sel.fd.pay ? nf1.format(sel.fd.pay) + ' ans en dynamique' : 'plus de ' + SET.bat.life + ' ans en dynamique')],
     [`Économies totales sur ${L} ans`, nf0.format(sel.fg.total) + '<small>CHF</small>', `gain net <b class="${sel.fg.net >= 0 ? 'pos' : 'neg'}">${sgn(sel.fg.net)} CHF</b> (GESA)`],
     ['Autonomie', nf0.format(sel.aut) + '<small>%</small>', 'contre ' + nf0.format(res[0].aut) + ' % sans batterie'],
     ['Cycles par an ' + help('Charges complètes équivalentes par an. Une batterie lithium (LFP) supporte en général 6 000 cycles ou plus.'), nf0.format(sel.s.cycles * scale) + '<small>cycles</small>', 'achat réseau évité : ' + nf0.format((bG.imp - sel.s.imp) * scale) + ' kWh/an (GESA)'],
@@ -382,7 +383,7 @@ async function renderBattery(){
     barDs('Gain net actualisé · dynamique', res.map(x => Math.round(x.fd.npv)), css('--s1'), 'b', {stack:undefined})]},
     options:opts('CHF', o => { o.scales.y.beginAtZero = false; o.scales.y.ticks.callback = v => nf0.format(v);
       o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + sgn(c.parsed.y) + ' CHF';
-      o.plugins.tooltip.callbacks.afterBody = it => { const x = res[it[0].dataIndex]; return ['Économie/an : ' + nf0.format(x.sg) + ' CHF (GESA) · ' + nf0.format(x.sd) + ' CHF (dynamique)', 'Retour : ' + (x.fg.pay ? nf1.format(x.fg.pay) + ' ans' : 'jamais') + ' · autonomie ' + nf0.format(x.aut) + ' %']; }; })});
+      o.plugins.tooltip.callbacks.afterBody = it => { const x = res[it[0].dataIndex]; return ['Économie/an : ' + nf0.format(x.sg) + ' CHF (GESA) · ' + nf0.format(x.sd) + ' CHF (dynamique)', 'Retour : ' + (x.fg.pay ? nf1.format(x.fg.pay) + ' ans' : '> ' + SET.bat.life + ' ans') + ' · autonomie ' + nf0.format(x.aut) + ' %']; }; })});
   // flux cumulés sur la durée de vie (taille choisie)
   const yrs = Array.from({length:L + 1}, (_, i) => i === 0 ? 'Achat' : 'An ' + i);
   chart('cBatCum', {type:'line', data:{labels:yrs, datasets:[
@@ -397,14 +398,22 @@ async function renderBattery(){
     barDs('Économies · GESA', yv.map(x => Math.round(x.g)), css('--sun'), 'a', {stack:undefined}), barDs('Économies · dynamique', yv.map(x => Math.round(x.d)), css('--s1'), 'b', {stack:undefined})]},
     options:opts('CHF', o => { o.plugins.tooltip.callbacks.afterBody = it => { const x = yv[it[0].dataIndex]; return x.days < 360 ? nf0.format(x.days) + ' jours seulement dans la période' : ''; }; })});
   $('bTable').innerHTML = '<thead><tr><th class="l">Taille</th><th>Prix</th><th>Autonomie</th><th>Économie/an GESA</th><th>Retour GESA</th><th>Total ' + L + ' ans GESA</th><th>Gain net GESA</th><th>Économie/an dyn.</th><th>Retour dyn.</th><th>Gain net dyn.</th></tr></thead><tbody>' +
-    cand.map(x => `<tr${x === bestG ? ' style="background:var(--sun-soft)"' : ''}><td class="l">${nf0.format(x.c)} kWh${x === bestG ? ' ★' : ''}</td><td>${nf0.format(x.fg.inv)}</td><td>${nf0.format(x.aut)} %</td><td>${nf0.format(x.sg)}</td><td>${x.fg.pay ? nf1.format(x.fg.pay) + ' ans' : 'jamais'}</td><td>${nf0.format(x.fg.total)}</td><td class="${x.fg.net >= 0 ? 'pos' : 'neg'}">${sgn(x.fg.net)}</td><td>${nf0.format(x.sd)}</td><td>${x.fd.pay ? nf1.format(x.fd.pay) + ' ans' : 'jamais'}</td><td class="${x.fd.net >= 0 ? 'pos' : 'neg'}">${sgn(x.fd.net)}</td></tr>`).join('') + '</tbody>';
+    cand.map(x => `<tr${x === bestG ? ' style="background:var(--sun-soft)"' : ''}><td class="l">${nf0.format(x.c)} kWh${x === bestG ? ' ★' : ''}</td><td>${nf0.format(x.fg.inv)}</td><td>${nf0.format(x.aut)} %</td><td>${nf0.format(x.sg)}</td><td>${x.fg.pay ? nf1.format(x.fg.pay) + ' ans' : '> ' + SET.bat.life + ' ans'}</td><td>${nf0.format(x.fg.total)}</td><td class="${x.fg.net >= 0 ? 'pos' : 'neg'}">${sgn(x.fg.net)}</td><td>${nf0.format(x.sd)}</td><td>${x.fd.pay ? nf1.format(x.fd.pay) + ' ans' : '> ' + SET.bat.life + ' ans'}</td><td class="${x.fd.net >= 0 ? 'pos' : 'neg'}">${sgn(x.fd.net)}</td></tr>`).join('') + '</tbody>';
+}
+function renderPriceTable(){
+  const box = $('bPrices'); if (!box) return;
+  const sizes = SET.bat.sizes.split(/[,; ]+/).map(Number).filter(v => v > 0 && isFinite(v)).sort((a,b) => a - b), P0 = SET.bat.prices || {};
+  if (box.contains(document.activeElement)) { sizes.forEach(c => { const e = box.querySelector(`[data-pk="${c}"]`); if (e) e.textContent = nf0.format(priceOf(c) / c) + ' CHF/kWh'; }); return; }
+  box.innerHTML = sizes.map(c => `<label class="pcell"><span>${nf0.format(c)} kWh</span><input type="number" step="50" min="0" data-ps="${c}" value="${P0[c] != null ? P0[c] : ''}" placeholder="${nf0.format(c * SET.bat.costKwh + SET.bat.costFix).replace(/\s/g,'')}"><em data-pk="${c}">${nf0.format(priceOf(c) / c)} CHF/kWh</em></label>`).join('');
 }
 function formBattery(){
   if ($('bForm').dataset.ok) return;
   const B = SET.bat, f = (k, label, step, suf) => `<label>${label}<span class="inp"><input type="number" step="${step}" data-k="${k}" value="${B[k]}">${suf ? `<em>${suf}</em>` : ''}</span></label>`;
-  $('bForm').innerHTML = `<div class="form">${f('costKwh','Prix par kWh de batterie','10','CHF')}${f('costFix','Pose, onduleur, frais fixes','100','CHF')}${f('life','Durée de vie','1','ans')}${f('deg','Perte de capacité','0.5','%/an')}
+  $('bForm').innerHTML = `<div class="form">${f('costKwh','Prix par kWh (tailles sans prix saisi)','10','CHF')}${f('costFix','Frais fixes en plus','100','CHF')}${f('life','Durée de vie','1','ans')}${f('deg','Perte de capacité','0.5','%/an')}
     ${f('eff','Rendement charge + décharge','1','%')}${f('cRate','Puissance (kW par kWh)','0.1','')}${f('maxKw','Puissance maximale','1','kW')}${f('rate','Taux d\'actualisation','0.5','%')}<label>Tailles à comparer<span class="inp"><input type="text" data-k="sizes" value="${B.sizes}"><em>kWh</em></span></label></div>`;
   $('bForm').dataset.ok = 1;
+  $('bPrices').addEventListener('input', e => { const i = e.target; if (!i.dataset.ps) return; SET.bat.prices = SET.bat.prices || {}; if (i.value === '') delete SET.bat.prices[i.dataset.ps]; else SET.bat.prices[i.dataset.ps] = +i.value; save(); renderPriceTable(); clearTimeout(S._b); S._b = setTimeout(renderBattery, 400); });
+  $('bPriceReset').addEventListener('click', () => { SET.bat.prices = {}; save(); $('bPrices').innerHTML = ''; renderPriceTable(); renderBattery(); });
   $('bForm').addEventListener('input', e => { const i = e.target; if (!i.dataset.k) return; SET.bat[i.dataset.k] = i.dataset.k === 'sizes' ? i.value : +i.value; save(); clearTimeout(S._b); S._b = setTimeout(renderBattery, 300); });
 }
 
@@ -423,7 +432,7 @@ async function renderScenarios(){
   const pr = period(H0, S.per), H = pr.H, scale = 365 / (H.length / 24), B = SET.bat;
   const sizes = [0,5,10,15,20,25,30,35,40,45,50,55];
   const R = SCEN.map(sc => withScen(sc, () => { const b0 = run(H, P, 0, sc.tariff, 'simple');
-    const rows = sizes.map(c => { const m = c ? run(H, P, c, sc.tariff, 'smart') : b0, sv = (b0.cost - m.cost) * scale, inv = c ? c * B.costKwh + B.costFix : 0, tot = life(sv);
+    const rows = sizes.map(c => { const m = c ? run(H, P, c, sc.tariff, 'smart') : b0, sv = (b0.cost - m.cost) * scale, inv = priceOf(c), tot = life(sv);
       return {c, sv, inv, tot, net:tot - inv, annual:b0.cost * scale - tot / B.life + inv / B.life, pay:sv > 0 && c ? inv / sv : null}; });
     return {sc, base:b0.cost * scale, rows}; }));
   if (S.ssize == null) S.ssize = 15;
@@ -455,7 +464,7 @@ async function renderScenarios(){
   $('sBE').innerHTML = be.map(b => `<div class="kpi"><div class="k">${b.l}</div><div class="v num" style="font-size:1.35rem">${nf0.format(Math.max(0, b.v))}<small>CHF/kWh</small></div><div class="d">prix maximal pour être rentable (${S.ssize} kWh)</div></div>`).join('');
   // 5. sensibilité au prix de reprise (GESA, prix fixe)
   const sp = [3,4,5,6,7,8,9,10,11,12];
-  const sens = sp.map(v => { const old = SET.tariff.sell; SET.tariff.sell = v; try { return withScen(SCEN[0], () => { const b0 = run(H, P, 0, 'gesa', 'simple'), m = run(H, P, S.ssize, 'gesa', 'smart'); const sv = (b0.cost - m.cost) * scale; return {sv, net:life(sv) - (S.ssize * B.costKwh + B.costFix)}; }); } finally { SET.tariff.sell = old; } });
+  const sens = sp.map(v => { const old = SET.tariff.sell; SET.tariff.sell = v; try { return withScen(SCEN[0], () => { const b0 = run(H, P, 0, 'gesa', 'simple'), m = run(H, P, S.ssize, 'gesa', 'smart'); const sv = (b0.cost - m.cost) * scale; return {sv, net:life(sv) - priceOf(S.ssize)}; }); } finally { SET.tariff.sell = old; } });
   chart('cS5', {type:'line', data:{labels:sp.map(v => v + ' ct'), datasets:[
     lineDs('Gain net sur ' + B.life + ' ans', sens.map(x => Math.round(x.net)), css('--sun'), {pointRadius:3, fill:{target:{value:0}, above:css('--good') + '22', below:css('--bad') + '18'}}),
     lineDs('Économie par an', sens.map(x => Math.round(x.sv)), css('--s1'), {pointRadius:3, yAxisID:'y1'})]},
@@ -464,7 +473,7 @@ async function renderScenarios(){
       o.plugins.tooltip.callbacks.label = c => ' ' + c.dataset.label + ' : ' + (c.dataset.yAxisID === 'y1' ? nf0.format(c.parsed.y) + ' CHF/an' : sgn(c.parsed.y) + ' CHF'); })});
   // tableau croisé
   $('sTable').innerHTML = '<thead><tr><th class="l">Scénario</th><th>Coût sans batterie</th><th>Économie/an (' + S.ssize + ' kWh)</th><th>Retour</th><th>Gain net ' + B.life + ' ans</th><th>Coût annuel avec batterie</th><th>Meilleure taille</th></tr></thead><tbody>' +
-    sel.map(r => { const bt = r.rows.filter(x => x.c).reduce((a, x) => x.net > a.net ? x : a); return `<tr><td class="l"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${css(r.sc.col)};margin-right:6px"></span>${r.sc.label}</td><td>${nf0.format(r.base)} CHF/an</td><td>${nf0.format(r.x.sv)} CHF</td><td>${r.x.pay ? nf1.format(r.x.pay) + ' ans' : 'jamais'}</td><td class="${r.x.net >= 0 ? 'pos' : 'neg'}">${sgn(r.x.net)} CHF</td><td>${nf0.format(r.x.annual)} CHF/an</td><td>${bt.c} kWh (${sgn(bt.net)} CHF)</td></tr>`; }).join('') + '</tbody>';
+    sel.map(r => { const bt = r.rows.filter(x => x.c).reduce((a, x) => x.net > a.net ? x : a); return `<tr><td class="l"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${css(r.sc.col)};margin-right:6px"></span>${r.sc.label}</td><td>${nf0.format(r.base)} CHF/an</td><td>${nf0.format(r.x.sv)} CHF</td><td>${r.x.pay ? nf1.format(r.x.pay) + ' ans' : '> ' + SET.bat.life + ' ans'}</td><td class="${r.x.net >= 0 ? 'pos' : 'neg'}">${sgn(r.x.net)} CHF</td><td>${nf0.format(r.x.annual)} CHF/an</td><td>${bt.c} kWh (${sgn(bt.net)} CHF)</td></tr>`; }).join('') + '</tbody>';
 }
 
 /* ---------- démarrage ---------- */
