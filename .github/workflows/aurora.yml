@@ -1,0 +1,33 @@
+name: PolyImmo (Aurora Vision)
+on:
+  schedule:
+    - cron: "20 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+jobs:
+  aurora:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Récupérer la production PolyImmo
+        env:
+          AURORA_APIKEY: ${{ secrets.AURORA_APIKEY }}
+          AURORA_USER: ${{ secrets.AURORA_USER }}
+          AURORA_PASSWORD: ${{ secrets.AURORA_PASSWORD }}
+        run: python scripts/fetch_aurora.py
+      - name: Enregistrer
+        run: |
+          git config user.name "polyimmo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/production.json data/power15.v64
+          git diff --cached --quiet && exit 0
+          git commit -m "PolyImmo : production Aurora mise à jour automatiquement"
+          git pull --rebase && git push
