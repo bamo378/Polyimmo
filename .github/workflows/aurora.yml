@@ -1,8 +1,6 @@
 name: PolyImmo (Aurora Vision)
 on:
-  schedule:
-    - cron: "20 5 * * *"
-  workflow_dispatch:
+  workflow_dispatch:   # à la demande seulement
 permissions:
   contents: write
 concurrency:
