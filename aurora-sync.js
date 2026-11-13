@@ -42,7 +42,21 @@ function apply(o, D, v64){
   D.power15 = {start:p0, stepMin:15, unit:'kW', values:vals};
   D.hourly = {start:p0, values:Array.from({length:24 * 7}, (_, h) => Math.round((vals[4*h] + vals[4*h+1] + vals[4*h+2] + vals[4*h+3]) / 4 * 10) / 10)};
   if (o.wx) D.weather = {at:o.at.slice(0, 16), ...o.wx};
-  if (o.active != null) { D.events = D.events || {}; D.events.active = o.active; }
+  if (o.active != null || o.events) {
+    const E = D.events = D.events || {since:today, total:0, byCode:[], byMonth:{}, recent:[]}, SEV = {LOW:'faible', MEDIUM:'moyenne', HIGH:'élevée', CRITICAL:'critique'};
+    if (o.active != null) { E.active = o.active; E.activeList = (o.activeList || []).map(([id, st, en, dev, code, name, sev, desc]) => ({id, start:st, dev, code, name, sev:SEV[sev] || sev, desc})); E.activeAt = o.at.slice(0, 16); }
+    const seen = new Set(E.seen || []);
+    (o.events || []).forEach(([id, st, en, dev, code, name, sev, desc]) => {
+      if (seen.has(id)) return; seen.add(id); E.total = (E.total || 0) + 1;
+      const m = st.slice(0, 7); E.byMonth[m] = (E.byMonth[m] || 0) + 1;
+      const row = E.byCode.find(r => r[0] === code && r[1] === dev); if (row) row[4]++; else E.byCode.push([code, dev, name, SEV[sev] || sev, 1]);
+      const mins = en ? Math.max(0, Math.round((Date.parse(en) - Date.parse(st)) / 6e4)) : 0;
+      E.recent.push([st, mins, dev, code, SEV[sev] || sev]);
+    });
+    E.byCode.sort((a, b) => b[4] - a[4]);
+    E.recent.sort((a, b) => b[0] < a[0] ? -1 : 1); E.recent = E.recent.slice(0, 40);
+    E.seen = [...seen].slice(-600);
+  }
   D.updated = today;
   return {D, v64:encode(arr), last:D.daily[D.daily.length - 1]};
 }

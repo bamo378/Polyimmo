@@ -278,7 +278,7 @@ function renderHome(){
   if (!top.length) todo.innerHTML = '<div class="it"><span class="ic ok">✓</span><div><b>Rien à signaler</b><span>Les factures, la production et les onduleurs sont cohérents.</span></div></div>';
   top.forEach(x => { const d = document.createElement('div'); d.className = 'it';
     d.innerHTML = `<span class="ic ${x.sev === 'erreur' ? 'err' : ''}">${x.sev === 'erreur' ? '✕' : '!'}</span><div><b></b><span></span></div>`;
-    d.querySelector('b').textContent = x.title + (x.period ? ' · ' + x.period : ''); d.querySelector('span:last-child').textContent = x.detail || ''; todo.appendChild(d); });
+    d.querySelector('b').textContent = x.title + (x.period ? ' · ' + x.period : ''); d.querySelector('span:last-child').textContent = x.detail || ''; if (x.go === 'alarms') { d.setAttribute('data-go-alarms', ''); d.style.cursor = 'pointer'; d.title = 'Voir les alarmes'; d.querySelector('span:last-child').textContent += ' · cliquez pour voir les alarmes'; } todo.appendChild(d); });
   const nInfo = checks.length - top.length; if (nWarn > top.length || nInfo) { const p = document.createElement('div'); p.className = 'note'; p.textContent = (nWarn > top.length ? (nWarn - top.length) + ' autre(s) point(s) à vérifier · ' : '') + (nInfo ? nInfo + ' information(s)' : ''); todo.appendChild(p); }
   const next = PI.nextExpected ? PI.nextExpected() : null;
   if (next && next.period) { const d = document.createElement('div'); d.className = 'it';
@@ -388,7 +388,12 @@ function renderWeather(){
   if (w) { el('wx').innerHTML = `<div class="wx-now"><span class="ic">${WX[w.now.code]||'🌡️'}</span><div><strong class="num">${nf1.format(w.now.temp)} °C</strong><div class="sub">${esc(WXT[w.now.code]||w.now.code)} · le ${fmtDate(w.at.slice(0,10))} à ${w.at.slice(11,16)}</div></div></div>` +
     '<div class="wx-days">' + w.forecast.map(([d,c,mn,mx]) => `<div class="wx-d" title="${esc(WXT[c]||c)}"><b>${JOURS[D(d).getDay()]} ${D(d).getDate()}</b><span class="ic">${WX[c]||'🌡️'}</span>${nf0.format(mn)}° / ${nf0.format(mx)}°</div>`).join('') + '</div>'; el('wxSub').textContent = 'Prévisions à 6 jours · source Aurora Vision'; }
   if (e) {
-    el('evStatus').innerHTML = e.active ? `<span class="pill" style="background:#dc262622;color:var(--bad)">${e.active} alarme(s) active(s)</span>` : '<span class="pill">● Aucune alarme active</span>';
+    el('evStatus').innerHTML = e.active ? `<button type="button" class="pill" data-go-alarms style="background:#dc262622;color:var(--bad);border:0;cursor:pointer;font:inherit;font-weight:700">${e.active} alarme(s) active(s) · voir</button>` : '<span class="pill">● Aucune alarme active</span>';
+    const al = el('evActive'); if (al) { const L = e.activeList || [];
+      al.innerHTML = e.active ? `<h4 style="margin:4px 0 8px;color:var(--bad)">Alarmes actives${e.activeAt ? ' (relevé du ' + fmtDate(e.activeAt.slice(0,10)) + ' à ' + new Date(e.activeAt + ':00Z').toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'}) + ')' : ''}</h4>` +
+        (L.length ? '<div class="tablewrap"><table><thead><tr><th class="l">Depuis</th><th class="l">Alarme</th><th class="l">Onduleur</th><th>Gravité</th></tr></thead><tbody>' + L.map(a => { const d = new Date(a.start); return `<tr><td class="l">${d.toLocaleDateString('fr-CH',{day:'numeric',month:'short'})} ${d.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'})}</td><td class="l"><b>${esc(a.name)}</b> (${esc(a.code)})<br><span class="muted">${esc(a.desc || '')}</span></td><td class="l">${esc(a.dev)}</td><td><span class="sev">${esc(a.sev)}</span></td></tr>`; }).join('') + '</tbody></table></div>'
+          : '<p class="note">Le détail des alarmes sera disponible après la prochaine mise à jour depuis Aurora (bouton « Mettre à jour depuis Aurora »).</p>') +
+        '<p class="note"><a href="https://www.auroravision.net/dashboard/#35546755" target="_blank" rel="noopener">Ouvrir l\'installation dans Aurora Vision ↗</a></p>' : ''; }
     el('evSub').textContent = e.total + ' événements depuis le ' + fmtDate(e.since) + '. La plupart surviennent au lever et au coucher du soleil (tension faible) : c\'est normal.';
     const names = Object.fromEntries(e.byCode.map(x => [x[0], x[2]]));
     el('evCodes').innerHTML = '<thead><tr><th class="l">Type d\'événement</th><th class="l">Onduleur</th><th>Gravité</th><th>Nombre</th></tr></thead><tbody>' + e.byCode.map(([c,dev,nm,sev,n]) => `<tr><td class="l">${esc(nm)} (${esc(c)})</td><td class="l">${esc(dev)}</td><td><span class="sev">${esc(sev)}</span></td><td>${n}</td></tr>`).join('') + '</tbody>';
@@ -397,6 +402,8 @@ function renderWeather(){
   }
 }
 
+PI.showAlarms = function(){ setView('prod'); setTimeout(() => { const d = el('evDetails'); if (d) { d.open = true; d.scrollIntoView({behavior:'smooth', block:'start'}); } }, 250); };
+document.addEventListener('click', e => { if (e.target.closest('[data-go-alarms]')) { e.preventDefault(); PI.showAlarms(); } });
 /* ---------- navigation ---------- */
 const VIEWS = ['home','prod','fin','prix','villa','saisie','controles','rapports'];
 function setView(v, initial){

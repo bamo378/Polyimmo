@@ -60,7 +60,7 @@ button{font-family:inherit}
 .logo span{font-size:.78rem;font-weight:700;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;line-height:1.2}
 .tabs{display:flex;gap:2px;flex:1;overflow-x:auto;scrollbar-width:none;height:100%;align-items:stretch}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 11px;cursor:pointer;white-space:nowrap;
+.tabs button{appearance:none;border:0;background:transparent;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 9px;cursor:pointer;white-space:nowrap;
   position:relative;display:inline-flex;align-items:center;gap:7px;transition:color .15s}
 .tabs button:hover,.tabs .tablink:hover{color:var(--ink)}
 .tabs .tablink{display:flex;align-items:center;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:0 11px;white-space:nowrap;text-decoration:none}
@@ -496,7 +496,7 @@ body.noscroll{overflow:hidden}
     <section class="card">
       <div class="card-h"><div><h2>Météo et alarmes</h2><p class="sub" id="wxSub">Selon Aurora Vision</p></div><div id="evStatus"></div></div>
       <div id="wx"></div>
-      <details class="more"><summary>Événements des onduleurs</summary><p class="note" id="evSub"></p><div class="tablewrap" style="margin-top:8px"><table id="evCodes"></table></div><div class="tablewrap" style="margin-top:8px"><table id="evRecent"></table></div></details>
+      <details class="more" id="evDetails"><summary>Événements et alarmes des onduleurs</summary><div id="evActive"></div><p class="note" id="evSub"></p><div class="tablewrap" style="margin-top:8px"><table id="evCodes"></table></div><div class="tablewrap" style="margin-top:8px"><table id="evRecent"></table></div></details>
     </section>
   </div>
 </section>
@@ -815,13 +815,13 @@ body.noscroll{overflow:hidden}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 <script src="entries.js?v=10"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 <script src="finance.js?v=10"></script>
-<script src="checks.js?v=10"></script>
+<script src="checks.js?v=11"></script>
 <script src="report.js?v=10"></script>
 <script src="prix.js?v=10"></script>
 <script src="cash.js?v=1"></script>
 <script src="villa.js?v=1"></script>
-<script src="aurora-sync.js?v=3"></script>
+<script src="aurora-sync.js?v=4"></script>
 </body>
 </html>

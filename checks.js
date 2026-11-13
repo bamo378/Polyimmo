@@ -112,7 +112,7 @@ PI.runChecks = function(){
     }
   }
   const ev = PI.DATA && PI.DATA.events;
-  if (ev && ev.active) add('erreur','Onduleurs', ev.active + ' alarme(s) active(s) sur Aurora Vision', 'consultez l\'onglet Événements');
+  if (ev && ev.active) out.push({sev:'erreur', cat:'Onduleurs', title:ev.active + ' alarme(s) active(s) sur Aurora Vision', detail:(ev.activeList && ev.activeList.length ? ev.activeList.map(a => a.name + ' (' + a.dev + ')').join(' · ') : 'détail dans Production → Événements des onduleurs'), go:'alarms'});
   return out.sort((a,b) => SEV[a.sev] - SEV[b.sev]);
 };
 PI.checksByEntry = function(){ const m = {}; PI.runChecks().forEach(x => { if (x.id) (m[x.id] = m[x.id] || []).push(x); }); return m; };
@@ -139,6 +139,7 @@ PI.renderChecks = function(){
       const ic = document.createElement('span'); ic.className = 'cic'; ic.textContent = x.sev === 'erreur' ? '✕' : x.sev === 'attention' ? '!' : 'i';
       const body = document.createElement('div'); const t = document.createElement('strong'); t.textContent = x.title + (x.period ? ' · ' + x.period : ''); const p = document.createElement('p'); p.textContent = x.detail || ''; body.append(t, p);
       d.append(ic, body);
+      if (x.go === 'alarms') { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = 'Voir les alarmes'; b.onclick = () => PI.showAlarms && PI.showAlarms(); d.appendChild(b); }
       if (x.id) { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = 'Ouvrir la saisie'; b.onclick = () => { const e = PI.store.entries.find(y => y.id === x.id); if (e) PI.openForm(e); }; d.appendChild(b); }
       list.appendChild(d);
     });

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PolyImmo – mise à jour depuis Aurora Vision
 // @namespace    https://bamo378.github.io/Polyimmo/
-// @version      1.2
+// @version      1.3
 // @description  Quand le site PolyImmo ouvre Aurora Vision avec le bouton « Mettre à jour », lit toutes les données manquantes avec VOTRE connexion (lecture seule) et les renvoie au site. Aucun mot de passe n'est lu ni enregistré.
 // @match        https://www.auroravision.net/*
 // @run-at       document-start
@@ -45,8 +45,13 @@
     }
     const wx = await g('/weather/v1/plants/35546755/status?includeForecasts=true').catch(() => null);
     if (wx) o.wx = {now: {code: wx.condition && wx.condition.code, temp: wx.condition && wx.condition.temperature && wx.condition.temperature.value}, forecast: (wx.forecasts || []).map(f => [f.date.slice(0, 10), f.code, f.minTemperature.value, f.maxTemperature.value])};
+    const ev = x => [x.eventID, (x.startDate || '').slice(0, 16) + 'Z', x.endDate ? x.endDate.slice(0, 16) + 'Z' : null, /PVS-30/.test(x.entityName || '') ? 'PVS-30' : /PVS-100/.test(x.entityName || '') ? 'PVS-100' : (x.entityName || 'installation'),
+      x.eventType && x.eventType.code ? x.eventType.code.id : '', x.eventType && x.eventType.code ? x.eventType.code.name : '', x.severity || '', x.eventType && x.eventType.code ? (x.eventType.code.description || '').slice(0, 220) : ''];
     const act = await g('/event/v1/plants/35546755/events/PROFILE?eventState=ACTIVE&sdt=1970-01-01T00:00:00.000Z&edt=' + E).catch(() => null);
-    if (act) o.active = act.length;
+    if (act) { o.active = act.length; o.activeList = act.map(ev); }
+    banner('lecture des événements…');
+    const all = await g('/event/v1/plants/35546755/events/PROFILE?eventState=ALL&sdt=' + iso(from) + '&edt=' + E).catch(() => null);
+    if (all) o.events = all.map(ev);
     return o;
   }
   let tries = 0;
