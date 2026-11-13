@@ -24,7 +24,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 let DATA, PLANT = {}, INV = {}, FIRST, LAST;
 const charts = PI.charts = {};
-const S = {view:'home', hc:'30', hcCmp:false, hr:'q', pc:'30', pcCmp:false, pcExp:false, pcMa:false, pcFrom:null, pcTo:null, iv:'30', day:null};
+const S = {view:'home', hc:'30', hcCmp:false, hr:'cmp', pc:'30', pcCmp:false, pcExp:false, pcMa:false, pcFrom:null, pcTo:null, iv:'30', day:null};
 
 /* ---------- outils ---------- */
 PI.makeChart = (id, cfg) => { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(el(id), cfg); return charts[id]; };
@@ -249,15 +249,25 @@ function renderHome(){
   // revenus
   setChips('hrRange', S.hr);
   let labels, vals, kw, oth;
-  if (S.hr === 'q') { labels = rq.map(x => x.q.replace('-T',' T')); vals = rq.map(x => Math.round(x.rev)); kw = rq.map(x => x.kwh); oth = rq.map(x => x.other); }
+  if (S.hr !== 'y') { labels = rq.map(x => x.q.replace('-T',' T')); vals = rq.map(x => Math.round(x.rev)); kw = rq.map(x => x.kwh); oth = rq.map(x => x.other); }
   else { const ys = {}; rq.forEach(x => { const y = x.q.slice(0,4); (ys[y] = ys[y] || {rev:0, kwh:0, other:0, n:0}); ys[y].rev += x.rev; ys[y].kwh += x.kwh; ys[y].other += x.other; ys[y].n++; });
     const ks = Object.keys(ys).sort(); labels = ks.map(y => y + (ys[y].n < 4 ? ' (' + ys[y].n + ' trim.)' : '')); vals = ks.map(y => Math.round(ys[y].rev)); kw = ks.map(y => ys[y].kwh); oth = ks.map(y => ys[y].other); }
+  if (S.hr === 'cmp') { // trimestres côte à côte, une couleur par année
+    const years = [...new Set(rq.map(x => x.q.slice(0,4)))].sort(), pal = ['--s4','--s3','--s2','--s1','--sun','--brand','--ink-2'];
+    const get = (y, t) => rq.find(x => x.q === y + '-T' + t);
+    const dsy = years.map((y, i) => bars(y, [1,2,3,4].map(t => { const x = get(y, t); return x ? Math.round(x.rev + x.other) : null; }), css(pal[(pal.length - years.length + i) % pal.length]), {stack:undefined, maxBarThickness:26}));
+    PI.makeChart('cHomeRev', {type:'bar', data:{labels:['T1 · janv.–mars','T2 · avr.–juin','T3 · juil.–sept.','T4 · oct.–déc.'], datasets:dsy}, options:PI.baseOpts('CHF', o => {
+      o.plugins.legend = {display:true, position:'top', align:'end', labels:{boxWidth:10, boxHeight:10, color:css('--ink-2'), font:{size:11, weight:'600'}}};
+      o.plugins.tooltip.callbacks.label = c => { const x = get(c.dataset.label, c.dataIndex + 1); return x ? ' ' + c.dataset.label + ' : ' + nf0.format(x.rev + x.other) + ' CHF · ' + nf0.format(x.kwh) + ' kWh à ' + nf2.format(x.rev / x.kwh * 100) + ' ct' + (x.other ? ' (dont ' + nf0.format(x.other) + ' CHF d\'indemnité)' : '') : ' ' + c.dataset.label + ' : pas de facture'; };
+    })});
+  } else {
   const ds = [bars('Électricité', vals, css('--sun'))];
   if (oth.some(Boolean)) ds.push(bars('Indemnité / autre', oth.map(Math.round), css('--s3'), {stack:'r'})), ds[0].stack = 'r';
   PI.makeChart('cHomeRev', {type:'bar', data:{labels, datasets:ds}, options:PI.baseOpts('CHF', o => {
     o.scales.x.stacked = true; o.scales.y.stacked = true;
     if (ds.length > 1) o.plugins.legend = {display:true, position:'top', align:'end', labels:{boxWidth:10, boxHeight:10, color:css('--ink-2'), font:{size:11, weight:'600'}}};
     o.plugins.tooltip.callbacks.afterBody = it => { const i = it[0].dataIndex; return kw[i] ? [nf0.format(kw[i]) + ' kWh vendus', 'Prix moyen : ' + nf2.format(vals[i]/kw[i]*100) + ' ct/kWh'] : []; }; })});
+  }
   const tot = rq.reduce((a,x)=>a+x.rev+x.other,0), tk = rq.reduce((a,x)=>a+x.kwh,0), trev = rq.reduce((a,x)=>a+x.rev,0);
   const last = rq[rq.length-1];
   el('hrSum').innerHTML = `<span>Total depuis 2023 <b>${nf0.format(tot)} CHF</b></span><span>Prix moyen <b>${nf2.format(trev/tk*100)} ct/kWh</b></span>` +
