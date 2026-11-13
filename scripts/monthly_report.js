@@ -15,7 +15,9 @@ const fs = require('fs'), path = require('path');
   await page.waitForFunction(() => window.PI && PI.LAST && PI.reportPack && window.jspdf && window.Chart && PI.runChecks, null, { timeout: 60000 });
   await page.waitForTimeout(1500);                       // logo, finances
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Zurich' }));
-  const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(), m = now.getMonth() === 0 ? 12 : now.getMonth();
+  const cur = process.env.REPORT_PERIOD === 'current';      // essai : mois en cours (à ce jour)
+  const y = cur ? now.getFullYear() : now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const m = cur ? now.getMonth() + 1 : now.getMonth() === 0 ? 12 : now.getMonth();
   const info = await page.evaluate(() => ({ last: PI.LAST }));
   const r = await page.evaluate(([a, b]) => PI.reportPack(a, b), [y, m]);
   fs.writeFileSync(path.join(out, r.name), Buffer.from(r.b64, 'base64'));

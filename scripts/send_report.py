@@ -42,7 +42,7 @@ Le site : https://bamo378.github.io/Polyimmo/
 Rapport envoyé automatiquement par le robot PolyImmo.
 """
 msg = EmailMessage()
-msg["Subject"] = f"PolyImmo – rapport solaire {DE(m)} {y}"
+msg["Subject"] = f"PolyImmo – rapport solaire {DE(m)} {y}" + (" (à ce jour, essai)" if os.environ.get("REPORT_PERIOD") == "current" else "")
 msg["From"] = formataddr(("Robot PolyImmo", USER))
 msg["To"] = ", ".join(TO)
 msg["Message-ID"] = make_msgid(domain=USER.split("@")[-1])

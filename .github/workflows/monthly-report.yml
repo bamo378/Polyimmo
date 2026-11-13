@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: "17 8 1 * *"    # le 1er de chaque mois, ~09:17 (hiver) / 10:17 (été) en Suisse
   workflow_dispatch:
+    inputs:
+      period:
+        description: "Période : previous (mois précédent) ou current (mois en cours, à ce jour)"
+        default: previous
 permissions:
   contents: write
 concurrency:
@@ -17,6 +21,7 @@ jobs:
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_IMAP: ${{ secrets.MAIL_IMAP }}
       REPORT_TO: ${{ secrets.REPORT_TO }}
+      REPORT_PERIOD: ${{ github.event.inputs.period || 'previous' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
