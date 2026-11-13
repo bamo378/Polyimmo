@@ -1,0 +1,34 @@
+name: PolyImmo (rapport Aurora par e-mail)
+on:
+  schedule:
+    - cron: "17 5 * * *"    # chaque matin (~06:17 en Suisse)
+    - cron: "47 11 * * *"   # repasse de midi si le rapport arrive tard
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: data-commit
+  cancel-in-progress: false
+jobs:
+  mail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Lire le rapport Aurora dans la boîte du robot
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_IMAP: ${{ secrets.MAIL_IMAP }}
+        run: python scripts/fetch_aurora_mail.py
+      - name: Enregistrer
+        run: |
+          git config user.name "polyimmo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/production.json data/power15.v64
+          git diff --cached --quiet && exit 0
+          git commit -m "PolyImmo : production mise à jour depuis le rapport Aurora"
+          git pull --rebase && git push
