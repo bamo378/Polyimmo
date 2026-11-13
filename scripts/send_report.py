@@ -33,9 +33,9 @@ Production depuis le 1er janvier {y} : {f(py)} kWh
 Alarmes en cours : {E.get('active', 0)}
 Données Aurora Vision jusqu'au : {meta['last']}
 
-En pièces jointes :
-- le rapport complet du mois,
-- le rapport de l'année {y} (cumul à ce jour).
+En pièce jointe, le rapport PDF :
+- pages 1 et 2 : l'essentiel du mois et de l'année {y},
+- pages suivantes : le détail (graphiques, onduleurs, finances, saisies, contrôles, alarmes).
 
 Le site : https://bamo378.github.io/Polyimmo/
 

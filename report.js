@@ -46,42 +46,55 @@ async function chartImg(cfg, w = 1400, h = 540){
 const hex = a => '#' + a.map(v => v.toString(16).padStart(2,'0')).join('');
 
 /* ---------- génération ---------- */
-async function generate(preview){
-  if (!window.jspdf) { PI.toast('Module PDF en cours de chargement, réessayez dans un instant'); return; }
-  const bytes = preview === 'bytes'; if (bytes) preview = false;
-  const btn = bytes ? {disabled:false} : el(preview ? 'repPreview' : 'repGo'); const old = btn.textContent; btn.textContent = 'Génération…'; btn.disabled = true;
-  try {
-    const p = period(), {jsPDF} = window.jspdf, doc = new jsPDF({unit:'mm', format:'a4', compress:true});
-    const W = 210, M = 14; let y = 0;
-    const nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2;
-    // en-tête
+/* ---------- boîte à outils de mise en page ---------- */
+const W = 210, M = 14;
+function kit(doc){
+  const K = {y: 18};
+  K.ensure = h => { if (K.y + h > 280) { doc.addPage(); K.y = 18; } };
+  K.h2 = t => { K.y += 3; if (K.y > 232) { doc.addPage(); K.y = 18; } doc.setTextColor(...C.ink); doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.text(S(t), M, K.y); doc.setFillColor(...C.red); doc.rect(M, K.y + 2, 12, 0.8, 'F'); K.y += 8; };
+  K.note = t => { doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...C.grey); const lines = doc.splitTextToSize(S(t), W - 2*M); K.ensure(lines.length * 3.8 + 2); doc.text(lines, M, K.y); K.y += lines.length * 3.8 + 2; };
+  K.cards = list => { K.ensure(Math.ceil(list.length/3) * 24); const n = list.length, gap = 3, cw = (W - 2*M - gap*(Math.min(n,3)-1)) / Math.min(n,3);
+    list.forEach(([k,v,s,col2], i) => { const col = i % 3, row = Math.floor(i/3), x = M + col*(cw+gap), yy = K.y + row*24;
+      doc.setFillColor(...C.soft); doc.setDrawColor(...C.line); doc.roundedRect(x, yy, cw, 21, 2, 2, 'FD');
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.grey); doc.text(S(k), x + 4, yy + 6);
+      doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(...(col2 || C.ink)); doc.text(S(v), x + 4, yy + 13.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.grey); doc.text(doc.splitTextToSize(S(s||''), cw - 8)[0] || '', x + 4, yy + 18.5); });
+    K.y += Math.ceil(n/3) * 24 + 2; };
+  K.img = (url, h) => { if (K.y + h > 282) { doc.addPage(); K.y = 18; } doc.addImage(url, 'JPEG', M, K.y, W - 2*M, h, undefined, 'FAST'); K.y += h + 4; };
+  K.table = (head, body, opts = {}) => { doc.autoTable(Object.assign({head:[head.map(S)], body:body.map(r => r.map(S)), startY:K.y, margin:{left:M, right:M}, theme:'grid',
+    rowPageBreak:'avoid', styles:{font:'helvetica', fontSize:8.5, cellPadding:2, lineColor:C.line, lineWidth:0.2, textColor:C.ink},
+    headStyles:{fillColor:C.ink, textColor:255, fontStyle:'bold'}, alternateRowStyles:{fillColor:[250,250,248]}}, opts)); K.y = doc.lastAutoTable.finalY + 6; };
+  K.header = (title, label) => {
     doc.setFillColor(...C.ink); doc.rect(0, 0, W, 38, 'F');
     doc.setFillColor(...C.red); doc.rect(0, 38, W, 1.2, 'F');
     if (logo) { doc.setFillColor(255,255,255); doc.roundedRect(M, 8, 44, 22, 3, 3, 'F'); doc.addImage(logo, 'PNG', M + 3, 10, 38, 18, 'logo', 'FAST'); }
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.text(S('Rapport de production solaire'), M + 52, 17);
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.text(S(title), M + 52, 17);
     doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(215,210,214);
-    doc.text(S('Installation PolyImmo · Ch. des Prairies 12, Bulle · ' + nf1.format(PI.DATA.plant.kwp) + ' kWc'), M + 52, 24);
-    doc.setTextColor(255,138,138); doc.setFont('helvetica','bold'); doc.text(S('Période : ' + p.label), M + 52, 31);
-    y = 48;
-    const ensure = h => { if (y + h > 280) { doc.addPage(); y = 18; } };
-    const h2 = t => { y += 3; if (y > 232) { doc.addPage(); y = 18; } doc.setTextColor(...C.ink); doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.text(S(t), M, y); doc.setFillColor(...C.red); doc.rect(M, y + 2, 12, 0.8, 'F'); y += 8; };
-    const note = t => { doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...C.grey); const lines = doc.splitTextToSize(S(t), W - 2*M); ensure(lines.length * 3.8 + 2); doc.text(lines, M, y); y += lines.length * 3.8 + 2; };
-    const cards = list => { ensure(Math.ceil(list.length/3) * 24); const n = list.length, gap = 3, cw = (W - 2*M - gap*(Math.min(n,3)-1)) / Math.min(n,3);
-      list.forEach(([k,v,s], i) => { const col = i % 3, row = Math.floor(i/3), x = M + col*(cw+gap), yy = y + row*24;
-        doc.setFillColor(...C.soft); doc.setDrawColor(...C.line); doc.roundedRect(x, yy, cw, 21, 2, 2, 'FD');
-        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.grey); doc.text(S(k), x + 4, yy + 6);
-        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(...C.ink); doc.text(S(v), x + 4, yy + 13.5);
-        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.grey); doc.text(doc.splitTextToSize(S(s||''), cw - 8)[0] || '', x + 4, yy + 18.5); });
-      y += Math.ceil(n/3) * 24 + 2; };
-    const img = (url, h) => { if (y + h > 282) { doc.addPage(); y = 18; } doc.addImage(url, 'JPEG', M, y, W - 2*M, h, undefined, 'FAST'); y += h + 4; };
-    const table = (head, body, opts = {}) => { doc.autoTable(Object.assign({head:[head.map(S)], body:body.map(r => r.map(S)), startY:y, margin:{left:M, right:M}, theme:'grid',
-      rowPageBreak:'avoid', styles:{font:'helvetica', fontSize:8.5, cellPadding:2, lineColor:C.line, lineWidth:0.2, textColor:C.ink},
-      headStyles:{fillColor:C.ink, textColor:255, fontStyle:'bold'}, alternateRowStyles:{fillColor:[250,250,248]}}, opts)); y = doc.lastAutoTable.finalY + 6; };
+    doc.text(S('Installation PolyImmo · Ch. des Prairies 12, Bulle · ' + PI.nf1.format(PI.DATA.plant.kwp) + ' kWc'), M + 52, 24);
+    doc.setTextColor(255,138,138); doc.setFont('helvetica','bold'); doc.text(S(label), M + 52, 31);
+    K.y = 48; };
+  K.band = (title, label) => { doc.setFillColor(...C.ink); doc.rect(0, 0, W, 22, 'F'); doc.setFillColor(...C.red); doc.rect(0, 22, W, 1, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(S(title), M, 13);
+    doc.setTextColor(255,138,138); doc.setFontSize(10.5); doc.text(S(label), W - M, 13, {align:'right'}); K.y = 32; };
+  return K;
+}
+function footer(doc){
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.grey);
+    doc.text(S('PolyImmo · Rapport généré le ' + new Date().toLocaleDateString('fr-CH',{day:'numeric',month:'long',year:'numeric'}) + ' · données Aurora Vision au ' + PI.fmtDate(PI.LAST)), M, 290);
+    doc.text(S('Page ' + i + ' / ' + n), W - M, 290, {align:'right'}); }
+}
 
+/* ---------- corps du rapport (sections) ---------- */
+async function draw(doc, p, o){
+    const sec = o.sec, K = kit(doc);
+    const nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2;
+    if (o.band) { doc.addPage(); K.band(o.band, p.label); } else K.header('Rapport de production solaire', 'Période : ' + p.label);
+    const {ensure, h2, note, cards, img, table} = K;
     const pr = prodFor(p);
     const ents = PI.store.entries.filter(e => e.from <= p.to && (e.to || e.from) >= p.from);
     const grd = ents.filter(e => e.type === 'grd'); const invK = grd.reduce((a,e)=>a+(+e.kwhHT||0)+(+e.kwhBT||0),0), invA = grd.reduce((a,e)=>a+(+e.amount||0),0);
-    if (rep.sec.kpi) {
+    if (sec.kpi) {
       h2('Synthèse');
       const list = [
         ['Production', PI.fmtE(pr.kwh), pr.src + (pr.partial ? ' · période en cours' : '')],
@@ -93,7 +106,7 @@ async function generate(preview){
       ];
       cards(list);
     }
-    if (rep.sec.prod) {
+    if (sec.prod) {
       h2('Production');
       const days = (new Date(p.to) - new Date(p.from)) / 864e5 + 1;
       if (p.from >= PI.FIRST) {
@@ -113,7 +126,7 @@ async function generate(preview){
           note('Production par trimestre en kWh (relevés de compteur ; Aurora Vision pour le trimestre en cours).'); img(url, 62); }
       }
     }
-    if (rep.sec.inv && PI.INV['PVS-100'] && p.to >= PI.FIRST) {
+    if (sec.inv && PI.INV['PVS-100'] && p.to >= PI.FIRST) {
       h2('Onduleurs');
       const f = p.from > PI.FIRST ? p.from : PI.FIRST, t = p.to < PI.LAST ? p.to : PI.LAST;
       const tot = {}; ['PVS-100','PVS-30'].forEach(id => { tot[id] = 0; for (let k = f; k <= t; k = PI.addDays(k,1)) tot[id] += PI.INV[id][k] || 0; });
@@ -122,7 +135,7 @@ async function generate(preview){
         {columnStyles:{3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}}});
       note('Données Aurora Vision du ' + PI.fmtDate(f) + ' au ' + PI.fmtDate(t) + '. Alarmes actives : ' + ((PI.DATA.events && PI.DATA.events.active) || 0) + '.');
     }
-    if (rep.sec.fin && PI.finModel) {
+    if (sec.fin && PI.finModel) {
       h2('Finances & amortissement');
       const F = PI.finModel(), last = F.ys[F.ys.length-1];
       cards([
@@ -142,14 +155,14 @@ async function generate(preview){
         yrs.map(Y => [Y.y, Y.status, nf0.format(Y.kwh), nf2.format(Y.price), nf0.format(Y.rev + Y.other), Y.charges ? '-' + nf0.format(Y.charges) : '-', nf0.format(Y.cf), nf0.format(Y.pos)]),
         {columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right'},7:{halign:'right'}}});
     }
-    if (rep.sec.entries) {
+    if (sec.entries) {
       h2('Saisies de la période');
       if (!ents.length) note('Aucune saisie (facture, versement, charge) sur cette période.');
       else table(['Période','Type','Émetteur','Référence','kWh','Montant (CHF)','ct/kWh'], ents.sort((a,b) => a.from < b.from ? -1 : 1).map(e => { const k = (+e.kwhHT||0)+(+e.kwhBT||0);
         return [PI.periodLabel(e), PI.TYPES[e.type].label, e.issuer || '', e.ref || '', e.type === 'grd' ? nf0.format(k) : '-', (e.type === 'charge' ? '-' : '') + nf2.format(+e.amount||0), e.type === 'grd' && k ? nf2.format(e.amount/k*100) : '-']; }),
         {columnStyles:{4:{halign:'right'},5:{halign:'right'},6:{halign:'right'}}});
     }
-    if (rep.sec.checks) {
+    if (sec.checks) {
       h2('Contrôles & incohérences');
       const all = PI.runChecks(), imp = all.filter(x => x.sev !== 'info');
       note(all.length ? imp.length + ' point(s) à vérifier et ' + (all.length - imp.length) + ' information(s) à la date du rapport.' : 'Aucune incohérence détectée.');
@@ -157,11 +170,16 @@ async function generate(preview){
         {columnStyles:{0:{cellWidth:20}, 1:{cellWidth:24}, 2:{cellWidth:52}},
          didParseCell: d => { if (d.section === 'body' && d.column.index === 0) d.cell.styles.textColor = d.cell.raw === 'erreur' ? [220,38,38] : d.cell.raw === 'attention' ? [194,111,0] : C.grey; }});
     }
-    // pied de page
-    const n = doc.getNumberOfPages();
-    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.grey);
-      doc.text(S('PolyImmo · Rapport généré le ' + new Date().toLocaleDateString('fr-CH',{day:'numeric',month:'long',year:'numeric'}) + ' · données Aurora Vision au ' + PI.fmtDate(PI.LAST)), M, 290);
-      doc.text(S('Page ' + i + ' / ' + n), W - M, 290, {align:'right'}); }
+}
+
+async function generate(preview){
+  if (!window.jspdf) { PI.toast('Module PDF en cours de chargement, réessayez dans un instant'); return; }
+  const bytes = preview === 'bytes'; if (bytes) preview = false;
+  const btn = bytes ? {disabled:false} : el(preview ? 'repPreview' : 'repGo'); const old = btn.textContent; btn.textContent = 'Génération…'; btn.disabled = true;
+  try {
+    const p = period(), {jsPDF} = window.jspdf, doc = new jsPDF({unit:'mm', format:'a4', compress:true});
+    await draw(doc, p, {sec:rep.sec});
+    footer(doc);
     const name = 'PolyImmo_rapport_' + p.file + '.pdf';
     if (bytes) { const u8 = new Uint8Array(doc.output('arraybuffer')); let b = ''; for (let i = 0; i < u8.length; i += 32768) b += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return {name, b64: btoa(b)}; }
     if (preview) { const url = doc.output('bloburl'); window.open(url, '_blank') || PI.toast('Autorisez les fenêtres pop-up pour l\'aperçu'); }
@@ -170,6 +188,93 @@ async function generate(preview){
   } catch(e){ console.error(e); if (bytes) throw e; PI.toast('Erreur pendant la génération du rapport'); }
   finally { btn.textContent = old; btn.disabled = false; }
 }
+
+
+/* ---------- rapport mensuel complet (envoyé par e-mail) : 2 pages d'essentiel, puis le détail ---------- */
+function pOf(kind, y, m){ const keep = Object.assign({}, rep); Object.assign(rep, {kind, year:y, m}); const p = period(); Object.assign(rep, keep); return p; }
+function sumDays(f, t){ let s = 0, e = 0, n = 0, best = null, low = 0; const tt = t < PI.LAST ? t : PI.LAST;
+  for (let k = f; k <= tt; k = PI.addDays(k,1)) { if (!(k in PI.PLANT)) continue; const v = PI.PLANT[k], x = PI.expectedDay(k,'all'); s += v; e += x; n++; if (!best || v > PI.PLANT[best]) best = k; if (x > 0 && v < 0.5 * x) low++; }
+  return {kwh:s, exp:e, n, best, low}; }
+async function pack(y, m){
+  const {jsPDF} = window.jspdf, doc = new jsPDF({unit:'mm', format:'a4', compress:true});
+  const nf0 = PI.nf0, nf1 = PI.nf1, nf2 = PI.nf2, kwp = PI.DATA.plant.kwp, mm = String(m).padStart(2,'0'), MO = PI.MOIS_LONG || ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const pm = pOf('month', y, m), py = pOf('year', y), mo = MO[m-1] + ' ' + y;
+  const full = (f, t) => f >= PI.FIRST;                       // données journalières complètes ?
+  const A = sumDays(pm.from, pm.to), f1 = `${y-1}-${mm}-01`, t1 = new Date(y-1, m, 0, 12).toLocaleDateString('sv-SE');
+  const A1 = full(f1, t1) ? sumDays(f1, t1) : {kwh:0};
+  const ytdTo = pm.to, B = sumDays(`${y}-01-01`, ytdTo);
+  const B1 = (() => { const f = `${y-1}-01-01`, t = `${y-1}-${ytdTo.slice(5)}`; if (full(f, t)) return sumDays(f, t);
+    const r = prodFor({from:f, to:t}); return {kwh: r && r.kwh > 0 && (m % 3 === 0 || PI.FIRST <= `${y-1}-${String(m - m % 3 + 1).padStart(2,'0')}-01`) ? r.kwh : 0}; })();
+  const F = PI.finModel && PI.finModel(), FY = F && F.ys.find(Y => Y.y === y), price = FY ? FY.price : null;   // ct/kWh
+  const grdIn = (f, t) => PI.store.entries.filter(e => e.type === 'grd' && e.from <= t && (e.to || e.from) >= f);
+  const pct = (a, b) => b ? (a >= b ? '+' : '') + nf0.format((a / b - 1) * 100) + ' %' : '-';
+  const col = (a, b) => !b ? null : a >= b ? C.green : [220,38,38];
+  const E = PI.DATA.events || {}, alM = (E.byMonth || {})[`${y}-${mm}`] || 0;
+  const invSplit = (f, t) => { const r = {}; ['PVS-100','PVS-30'].forEach(id => { r[id] = 0; for (let k = f; k <= (t < PI.LAST ? t : PI.LAST); k = PI.addDays(k,1)) r[id] += (PI.INV[id] || {})[k] || 0; }); return r; };
+  let K = kit(doc);
+
+  // ===== PAGE 1 : l'essentiel du mois =====
+  K.header('Rapport mensuel – ' + mo, "L'essentiel du mois · pages 1-2 : résumé · ensuite : détail");
+  K.h2("L'essentiel de " + mo);
+  K.cards([
+    ['Production du mois', PI.fmtE(A.kwh), A.n + ' jour(s) de données Aurora Vision'],
+    ['Par rapport à l\'attendu', A.exp ? nf0.format(A.kwh / A.exp * 100) + ' %' : '-', 'attendu ' + PI.fmtE(A.exp), A.exp ? (A.kwh >= 0.95 * A.exp ? C.green : A.kwh >= 0.8 * A.exp ? [194,111,0] : [220,38,38]) : null],
+    ['Par rapport à ' + MO[m-1] + ' ' + (y-1), pct(A.kwh, A1.kwh), A1.kwh ? PI.fmtE(A1.kwh) + ' en ' + (y-1) : 'pas de données journalières', col(A.kwh, A1.kwh)],
+    ['Revenu estimé du mois', price ? nf0.format(A.kwh * price / 100) + ' CHF' : '-', price ? 'au prix moyen ' + nf2.format(price) + ' ct/kWh' : 'prix non disponible'],
+    ['Productible', nf0.format(A.kwh / kwp) + ' kWh/kWc', 'meilleur jour : ' + (A.best ? nf0.format(PI.PLANT[A.best]) + ' kWh le ' + PI.fmtDate(A.best) : '-')],
+    ['Alarmes en cours', String(E.active || 0), alM + ' événement(s) Aurora dans le mois, surtout mineurs', (E.active || 0) ? [220,38,38] : C.green],
+  ]);
+  const days = []; for (let k = pm.from; k <= (pm.to < PI.LAST ? pm.to : PI.LAST); k = PI.addDays(k,1)) days.push(k);
+  K.img(await chartImg({type:'bar', data:{labels:days.map(k => +k.slice(8)), datasets:[
+    {data:days.map(k => Math.round(PI.PLANT[k] || 0)), backgroundColor:hex(C.sun), borderRadius:5, order:2},
+    {type:'line', data:days.map(k => Math.round(PI.expectedDay(k,'all'))), borderColor:hex(C.green), borderWidth:4, borderDash:[8,6], pointRadius:0, order:1}]},
+    options:{scales:{y:{beginAtZero:true}, x:{ticks:{color:'#6e747e', font:{size:20}, maxRotation:0}}}}}, 1400, 520), 64);
+  K.note('Production de chaque jour en kWh (barres) et production attendue selon la saison (pointillés verts).');
+  const sp = invSplit(pm.from, pm.to), st = sp['PVS-100'] + sp['PVS-30'];
+  const msg = [];
+  msg.push(A.exp ? (A.kwh >= 0.95 * A.exp ? 'Production conforme à l\'attendu (' + nf0.format(A.kwh / A.exp * 100) + ' %).' : A.kwh >= 0.8 * A.exp ? 'Production un peu en dessous de l\'attendu (' + nf0.format(A.kwh / A.exp * 100) + ' %), en général à cause de la météo.' : 'Production inférieure à l\'attendu (' + nf0.format(A.kwh / A.exp * 100) + ' %) : météo ou incident à vérifier.') : '');
+  if (A.low) msg.push(A.low + ' jour(s) très faible(s) (moins de la moitié de l\'attendu), le plus souvent liés à la météo.');
+  if (st) msg.push('Répartition onduleurs : PVS-100 ' + nf0.format(sp['PVS-100'] / st * 100) + ' % · PVS-30 ' + nf0.format(sp['PVS-30'] / st * 100) + ' % (attendu environ 69 % / 31 % selon leur puissance).');
+  msg.push((E.active || 0) ? (E.active + ' alarme(s) en cours : voir le détail dans les pages suivantes.') : 'Aucune alarme en cours sur la centrale.');
+  K.h2('À retenir'); msg.filter(Boolean).forEach(t => K.note('• ' + t));
+
+  // ===== PAGE 2 : l'essentiel de l'année =====
+  doc.addPage(); K.band("L'essentiel de l'année " + y, 'du 1er janvier au ' + PI.fmtDate(ytdTo < PI.LAST ? ytdTo : PI.LAST));
+  const grdY = grdIn(`${y}-01-01`, ytdTo), kY = grdY.reduce((a,e)=>a+(+e.kwhHT||0)+(+e.kwhBT||0),0), aY = grdY.reduce((a,e)=>a+(+e.amount||0),0);
+  K.cards([
+    ['Production depuis janvier', PI.fmtE(B.kwh), 'attendu ' + PI.fmtE(B.exp) + ' (' + (B.exp ? nf0.format(B.kwh / B.exp * 100) : '-') + ' %)'],
+    ['Par rapport à ' + (y-1), pct(B.kwh, B1.kwh), B1.kwh ? PI.fmtE(B1.kwh) + ' sur la même période' : 'données ' + (y-1) + ' incomplètes', col(B.kwh, B1.kwh)],
+    ['Productible', nf0.format(B.kwh / kwp) + ' kWh/kWc', 'depuis le 1er janvier'],
+    ['Revenus facturés', nf0.format(aY) + ' CHF', grdY.length + ' facture(s) · ' + nf0.format(kY) + ' kWh'],
+    ['Revenu estimé de l\'année', price ? nf0.format(B.kwh * price / 100) + ' CHF' : '-', price ? 'production × ' + nf2.format(price) + ' ct/kWh' : ''],
+    F ? ['Reste à amortir', nf0.format(Math.max(0, F.cost - F.revToDate)) + ' CHF', nf0.format(Math.min(100, F.revToDate / F.cost * 100)) + ' % de l\'installation remboursé'] : ['Reste à amortir', '-', ''],
+  ]);
+  const ms = [...Array(12).keys()].map(i => i + 1);
+  const mSum = (yy, mi) => { const f = `${yy}-${String(mi).padStart(2,'0')}-01`; return sumDays(f, new Date(yy, mi, 0, 12).toLocaleDateString('sv-SE')); };
+  const cur = ms.map(mi => mi <= m ? mSum(y, mi) : null), prev = ms.map(mi => `${y-1}-${String(mi).padStart(2,'0')}-01` >= PI.FIRST ? mSum(y-1, mi) : {kwh:0});
+  K.img(await chartImg({type:'bar', data:{labels:ms.map(mi => PI.MOIS[mi-1]), datasets:[
+    {data:prev.map(r => Math.round(r.kwh)), backgroundColor:'#c9cdd3', borderRadius:5},
+    {data:cur.map(r => r ? Math.round(r.kwh) : null), backgroundColor:hex(C.sun), borderRadius:5}]},
+    options:{scales:{y:{beginAtZero:true}}}}, 1400, 500), 60);
+  K.note('Production par mois en kWh : ' + y + ' (orange) et ' + (y-1) + ' (gris).');
+  K.table(['Mois', 'Production ' + y, 'Attendu', 'Performance', 'Production ' + (y-1), 'Écart'],
+    ms.filter(mi => mi <= m).map(mi => { const c = cur[mi-1], q = prev[mi-1]; return [MO[mi-1], nf0.format(c.kwh) + ' kWh', nf0.format(c.exp) + ' kWh', c.exp ? nf0.format(c.kwh / c.exp * 100) + ' %' : '-', q.kwh ? nf0.format(q.kwh) + ' kWh' : '-', pct(c.kwh, q.kwh)]; })
+      .concat([['Total', nf0.format(B.kwh) + ' kWh', nf0.format(B.exp) + ' kWh', B.exp ? nf0.format(B.kwh / B.exp * 100) + ' %' : '-', B1.kwh ? nf0.format(B1.kwh) + ' kWh' : '-', pct(B.kwh, B1.kwh)]]),
+    {styles:{font:'helvetica', fontSize:8, cellPadding:1.4, lineColor:C.line, lineWidth:0.2, textColor:C.ink}, columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},
+     didParseCell: d => { if (d.section === 'body' && d.row.index === d.table.body.length - 1) d.cell.styles.fontStyle = 'bold'; }});
+
+  // ===== DÉTAIL =====
+  await draw(doc, pm, {band:'Détail du mois', sec:{kpi:false, prod:true, inv:true, fin:false, entries:true, checks:false}});
+  await draw(doc, py, {band:"Détail de l'année", sec:{kpi:false, prod:true, inv:true, fin:true, entries:true, checks:true}});
+  if ((E.recent || []).length) {
+    const K2 = kit(doc); doc.addPage(); K2.band('Alarmes et événements récents', 'source : Aurora Vision');
+    K2.table(['Date', 'Onduleur', 'Code', 'Gravité', 'Durée'], E.recent.slice(0, 30).map(([ts, mins, dev, code, sev]) => [new Date(ts).toLocaleString('fr-CH', {timeZone:'Europe/Zurich', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}), dev, code, sev || '', mins == null ? 'en cours' : mins < 1 ? '< 1 min' : mins < 60 ? mins + ' min' : nf1.format(mins / 60) + ' h']));
+  }
+  footer(doc);
+  const u8 = new Uint8Array(doc.output('arraybuffer')); let b = ''; for (let i = 0; i < u8.length; i += 32768) b += String.fromCharCode.apply(null, u8.subarray(i, i + 32768));
+  return {name:`PolyImmo_rapport_${y}-${mm}.pdf`, b64:btoa(b)};
+}
+PI.reportPack = (y, m) => pack(y, m);
 
 /* rapport automatique (robot mensuel) : PI.reportPDF({kind:'month', year, m}) -> {name, b64} */
 PI.reportPDF = spec => { Object.assign(rep, spec, {sec:{kpi:true, prod:true, inv:true, fin:true, entries:true, checks:true}}); return generate('bytes'); };
