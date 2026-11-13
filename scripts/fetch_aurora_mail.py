@@ -143,8 +143,9 @@ for i in ids[0].split():
         print("E-mail Aurora non reconnu :", subj(msg), "|", body[:500])
     elif re.search(r"undeliver|delivery status|returned to sender|mail delivery|non distribu", subj(msg), re.I):
         codes = re.findall(r"\b[45]\d\d[ -][45]\.\d{1,3}\.\d{1,3}[^.]{0,160}", body)   # motif du refus
-        red = lambda t: re.sub(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "<adresse>", t)
-        print("Rapport non distribué :", " | ".join(red(c) for c in codes[:4]) or red(body[:400]))
+        red = lambda t: re.sub(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", r"…@\1", t)
+        dest = sorted(set(re.findall(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", body)) - {USER.split("@")[-1], "ik.me", "infomaniak.com", "infomaniak.ch"})
+        print("Rapport non distribué (domaines concernés :", ", ".join(dest), ") :", " | ".join(red(c) for c in codes[:2]) or red(body[:400]))
         done.append(i)
     else:
         print("E-mail ignoré :", subj(msg))

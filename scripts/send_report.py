@@ -41,14 +41,18 @@ Le site : https://bamo378.github.io/Polyimmo/
 
 Rapport envoyé automatiquement par le robot PolyImmo.
 """
-msg = EmailMessage()
-msg["Subject"] = f"PolyImmo – rapport solaire {DE(m)} {y}" + (" (à ce jour, essai)" if os.environ.get("REPORT_PERIOD") == "current" else "")
-msg["From"] = formataddr(("Robot PolyImmo", USER))
-msg["To"] = ", ".join(TO)
-msg["Message-ID"] = make_msgid(domain=USER.split("@")[-1])
-msg.set_content(body)
-for p in pdfs:
-    msg.add_attachment(open(p, "rb").read(), maintype="application", subtype="pdf", filename=os.path.basename(p))
+def build(to):
+    msg = EmailMessage()
+    msg["Subject"] = f"PolyImmo – rapport solaire {DE(m)} {y}" + (" (à ce jour, essai)" if os.environ.get("REPORT_PERIOD") == "current" else "")
+    msg["From"] = formataddr(("Robot PolyImmo", USER))
+    msg["To"] = to
+    msg["Message-ID"] = make_msgid(domain=USER.split("@")[-1])
+    msg.set_content(body)
+    for p in pdfs:
+        msg.add_attachment(open(p, "rb").read(), maintype="application", subtype="pdf", filename=os.path.basename(p))
+    return msg
 with smtplib.SMTP_SSL(HOST, 465, context=ssl.create_default_context()) as s:
-    s.login(USER, PWD); s.send_message(msg)
-print(f"Rapport envoyé à {len(TO)} destinataire(s) avec {len(pdfs)} PDF.")
+    s.login(USER, PWD)
+    for to in TO:                      # un e-mail par destinataire : un refus n'affecte pas les autres
+        try: s.send_message(build(to)); print("Envoyé à …@" + to.split("@")[-1])
+        except smtplib.SMTPException as e: print("Refusé pour …@" + to.split("@")[-1], ":", str(e)[:200])
