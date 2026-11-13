@@ -269,6 +269,10 @@ tr.proj td{opacity:.72}
 .oacode{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0;word-break:break-all;font-size:.85rem}
 .oabtns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 ol.steps{line-height:1.8;padding-left:20px}
+.aubtn{background:var(--brand);color:#fff;border-color:var(--brand)}.aubtn:hover{filter:brightness(1.08);color:#fff}
+.aubox{margin:0 0 16px;padding:13px 16px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:.92rem;line-height:1.5}
+.aubox.ok{background:color-mix(in srgb,var(--good) 12%,var(--surface));border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.aubox.bad{background:color-mix(in srgb,var(--bad) 10%,var(--surface));border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
 #prix .card{transition:opacity .2s} span.muted{color:var(--muted);font-size:.85em;font-weight:500}
 @media (max-width:1000px){#pxKpis,#simKpis{grid-template-columns:1fr 1fr;gap:10px}}@media (max-width:560px){#pxKpis .v,#simKpis .v{font-size:1.15rem!important}#pxKpis .kpi,#simKpis .kpi{padding:12px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:.86rem;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:90;pointer-events:none}
@@ -397,12 +401,13 @@ body.noscroll{overflow:hidden}
 </header>
 
 <main class="wrap">
+<div class="aubox hidden" id="auBox" style="margin-top:18px" role="status"></div>
 
 <!-- ================= ACCUEIL ================= -->
 <section data-view="home" id="home">
   <div class="page-h">
     <div><h1>Votre installation en un coup d'œil</h1><p id="homeLead">185,92 kWc · Ch. des Prairies 12, Bulle · en service depuis juin 2023</p></div>
-    <button class="chip" type="button" data-quick="lastQuarter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Rapport du dernier trimestre</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip aubtn" type="button" data-aurora-sync><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Mettre à jour depuis Aurora</button><button class="chip" type="button" data-quick="lastQuarter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Rapport du dernier trimestre</button></div>
   </div>
   <div class="grid g4" id="homeKpis"></div>
 
@@ -438,8 +443,8 @@ body.noscroll{overflow:hidden}
 <!-- ================= PRODUCTION ================= -->
 <section data-view="prod" id="prod" class="hidden">
   <div class="page-h">
-    <div><h1>Production</h1><p>Données Aurora Vision au jour près depuis le 22.09.2025, relevés de compteur depuis 2023.</p></div>
-    <button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Exporter en CSV</button>
+    <div><h1>Production</h1><p>Données Aurora Vision au jour près depuis le 22.09.2025, relevés de compteur depuis 2023. <a href="aurora-installation.html">Installer le bouton de mise à jour</a></p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip aubtn" type="button" data-aurora-sync><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Mettre à jour depuis Aurora</button><button class="chip" id="csvBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Exporter en CSV</button></div>
   </div>
   <div class="grid g3" id="prodKpis" style="margin-bottom:16px"></div>
   <section class="card">
@@ -817,5 +822,6 @@ body.noscroll{overflow:hidden}
 <script src="prix.js?v=10"></script>
 <script src="cash.js?v=1"></script>
 <script src="villa.js?v=1"></script>
+<script src="aurora-sync.js?v=1"></script>
 </body>
 </html>
