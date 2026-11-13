@@ -6,6 +6,8 @@ from email.utils import formataddr, make_msgid
 
 USER, PWD, HOST = (os.environ.get(k, "").strip() for k in ("MAIL_USER", "MAIL_PASSWORD", "MAIL_IMAP"))
 TO = [a.strip() for a in os.environ.get("REPORT_TO", "").replace(";", ",").split(",") if a.strip()]
+ONLY = os.environ.get("ONLY_DOMAIN", "").strip().lower()
+if ONLY: TO = [a for a in TO if a.lower().endswith("@" + ONLY)]
 out = sys.argv[1] if len(sys.argv) > 1 else "out"
 if not (USER and PWD and HOST and TO):
     print("Secrets MAIL_* ou REPORT_TO manquants : rapport non envoyé."); sys.exit(0)

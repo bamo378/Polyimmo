@@ -146,6 +146,11 @@ for i in ids[0].split():
         red = lambda t: re.sub(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", r"…@\1", t)
         dest = sorted(set(re.findall(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", body)) - {USER.split("@")[-1], "ik.me", "infomaniak.com", "infomaniak.ch"})
         print("Rapport non distribué (domaines concernés :", ", ".join(dest), ") :", " | ".join(red(c) for c in codes[:2]) or red(body[:400]))
+        raw = msg.as_string()
+        for n, ad in enumerate([x.strip() for x in os.environ.get("REPORT_TO", "").replace(";", ",").split(",") if x.strip()], 1):
+            if ad.lower() in raw.lower():
+                loc = ad.split("@")[0]
+                print(f"   -> refusée : adresse n°{n} de REPORT_TO = {loc[:3]}…{loc[-3:]}@{ad.split('@')[-1]} ({len(loc)} caractères avant @, espaces : {' ' in ad})")
         done.append(i)
     else:
         print("E-mail ignoré :", subj(msg))

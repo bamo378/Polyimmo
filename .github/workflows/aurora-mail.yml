@@ -22,6 +22,7 @@ jobs:
           MAIL_USER: ${{ secrets.MAIL_USER }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_IMAP: ${{ secrets.MAIL_IMAP }}
+          REPORT_TO: ${{ secrets.REPORT_TO }}
         run: python scripts/fetch_aurora_mail.py
       - name: Enregistrer
         run: |

@@ -7,6 +7,9 @@ on:
       period:
         description: "Période : previous (mois précédent) ou current (mois en cours, à ce jour)"
         default: previous
+      only_domain:
+        description: "Essai : n'envoyer qu'aux adresses de ce domaine (vide = toutes)"
+        default: ""
 permissions:
   contents: write
 concurrency:
@@ -21,6 +24,7 @@ jobs:
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_IMAP: ${{ secrets.MAIL_IMAP }}
       REPORT_TO: ${{ secrets.REPORT_TO }}
+      ONLY_DOMAIN: ${{ github.event.inputs.only_domain || '' }}
       REPORT_PERIOD: ${{ github.event.inputs.period || 'previous' }}
     steps:
       - uses: actions/checkout@v4
