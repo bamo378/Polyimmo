@@ -6,7 +6,7 @@ const PI = window.PI = window.PI || {};
 const $ = id => document.getElementById(id);
 const CFG = () => { try { return JSON.parse(localStorage.getItem('pi-gh-v1') || '{}'); } catch(e){ return {}; } };
 const TZ = 'Europe/Zurich';
-let win = null, waitT = null;
+let win = null, waitT = null, FROM = '', P15 = '';
 
 function status(t, kind){ const b = $('auBox'); if (!b) return; b.className = 'aubox ' + (kind || ''); b.innerHTML = t; b.classList.remove('hidden'); }
 
@@ -78,11 +78,14 @@ function fromHash(){ const m = location.hash.match(/aurora=([^&]+)/); if (!m) re
 PI.auroraSync = function(){
   if (!CFG().token) { status('Pour enregistrer la mise à jour, ce navigateur doit d\'abord avoir une clé GitHub : ouvrez <b>Saisie → Connexion GitHub</b> (une seule fois). <a href="#" id="auGh">Ouvrir la connexion GitHub</a>', 'bad');
     const a = $('auGh'); if (a) a.onclick = ev => { ev.preventDefault(); const b = $('ghBtn'); if (b) b.click(); }; return; }
-  win = window.open('https://www.auroravision.net/dashboard/#polyimmo-sync', 'polyimmo-sync');
+  win = window.open('https://www.auroravision.net/dashboard/#polyimmo-sync&from=' + FROM + '&p15=' + P15, 'polyimmo-sync');
   if (!win) { status('Votre navigateur a bloqué l\'ouverture d\'Aurora : autorisez les fenêtres pop-up pour ce site, puis recliquez.', 'bad'); return; }
   status('Aurora Vision s\'ouvre dans un nouvel onglet… Connectez-vous si nécessaire : la suite se fait toute seule.');
   clearTimeout(waitT); waitT = setTimeout(() => status('Pas de réponse d\'Aurora. Le petit script Tampermonkey est-il installé ? <a href="aurora-installation.html" target="_blank" rel="noopener">Guide d\'installation</a>', 'bad'), 90000);
 };
-function wire(){ document.querySelectorAll('[data-aurora-sync]').forEach(b => b.addEventListener('click', PI.auroraSync)); fromHash(); }
+async function lastKnown(){ // dernier jour connu et fin de l'archive au quart d'heure, pour ne lire que ce qui manque
+  try { const d = await (await fetch('data/production.json', {cache:'no-store'})).json(); FROM = d.daily[d.daily.length - 1][0];
+    const a = decode(await (await fetch('data/power15.v64', {cache:'no-store'})).text()); P15 = new Date((1761082200 + 900 * (a.length - 1)) * 1000).toISOString().slice(0, 10); } catch(e) {} }
+function wire(){ lastKnown(); document.querySelectorAll('[data-aurora-sync]').forEach(b => b.addEventListener('click', PI.auroraSync)); fromHash(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();
