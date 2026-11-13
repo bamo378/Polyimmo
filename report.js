@@ -48,7 +48,8 @@ const hex = a => '#' + a.map(v => v.toString(16).padStart(2,'0')).join('');
 /* ---------- génération ---------- */
 async function generate(preview){
   if (!window.jspdf) { PI.toast('Module PDF en cours de chargement, réessayez dans un instant'); return; }
-  const btn = el(preview ? 'repPreview' : 'repGo'); const old = btn.textContent; btn.textContent = 'Génération…'; btn.disabled = true;
+  const bytes = preview === 'bytes'; if (bytes) preview = false;
+  const btn = bytes ? {disabled:false} : el(preview ? 'repPreview' : 'repGo'); const old = btn.textContent; btn.textContent = 'Génération…'; btn.disabled = true;
   try {
     const p = period(), {jsPDF} = window.jspdf, doc = new jsPDF({unit:'mm', format:'a4', compress:true});
     const W = 210, M = 14; let y = 0;
@@ -162,12 +163,16 @@ async function generate(preview){
       doc.text(S('PolyImmo · Rapport généré le ' + new Date().toLocaleDateString('fr-CH',{day:'numeric',month:'long',year:'numeric'}) + ' · données Aurora Vision au ' + PI.fmtDate(PI.LAST)), M, 290);
       doc.text(S('Page ' + i + ' / ' + n), W - M, 290, {align:'right'}); }
     const name = 'PolyImmo_rapport_' + p.file + '.pdf';
+    if (bytes) { const u8 = new Uint8Array(doc.output('arraybuffer')); let b = ''; for (let i = 0; i < u8.length; i += 32768) b += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return {name, b64: btoa(b)}; }
     if (preview) { const url = doc.output('bloburl'); window.open(url, '_blank') || PI.toast('Autorisez les fenêtres pop-up pour l\'aperçu'); }
     else doc.save(name);
     PI.toast(preview ? 'Aperçu ouvert dans un nouvel onglet' : 'Rapport téléchargé : ' + name);
-  } catch(e){ console.error(e); PI.toast('Erreur pendant la génération du rapport'); }
+  } catch(e){ console.error(e); if (bytes) throw e; PI.toast('Erreur pendant la génération du rapport'); }
   finally { btn.textContent = old; btn.disabled = false; }
 }
+
+/* rapport automatique (robot mensuel) : PI.reportPDF({kind:'month', year, m}) -> {name, b64} */
+PI.reportPDF = spec => { Object.assign(rep, spec, {sec:{kpi:true, prod:true, inv:true, fin:true, entries:true, checks:true}}); return generate('bytes'); };
 
 /* ---------- UI ---------- */
 PI.renderReportUI = function(){
