@@ -79,11 +79,49 @@ def attachments(msg):
             yield name, data
 
 
+def subj(msg):
+    return "".join((b.decode(c or "utf-8", errors="replace") if isinstance(b, bytes) else b)
+                   for b, c in decode_header(msg.get("Subject", "")))
+
+
+def text_of(msg):
+    parts = []
+    for p in msg.walk():
+        if p.get_content_type() in ("text/plain", "text/html") and p.get_payload(decode=True):
+            t = p.get_payload(decode=True).decode(p.get_content_charset() or "utf-8", errors="replace")
+            if p.get_content_type() == "text/html":
+                t = re.sub(r"(?is)<(script|style).*?</\1>", " ", t); t = re.sub(r"<[^>]+>", " ", t)
+                t = re.sub(r"&nbsp;", " ", t)
+            parts.append(t)
+    return re.sub(r"\s+", " ", " ".join(parts)).strip()
+
+
+SEV = {"high": "élevée", "haut": "élevée", "medium": "moyenne", "mid": "moyenne", "low": "faible", "basse": "faible", "info": "info"}
+
+
+def parse_alarm(msg, body):
+    """Alarme Aurora reçue par e-mail -> dict ou None."""
+    s = subj(msg); txt = s + " " + body
+    if not re.search(r"aurora|fimer", (msg.get("From", "") + txt), re.I): return None
+    if not re.search(r"event|alarm|alert|événement|evenement|fault|error|warning|erreur|panne", txt, re.I): return None
+    code = re.search(r"\b([EWD]\d{3})\b", txt)
+    dev = re.search(r"PVS-?(100|30)", txt, re.I)
+    sev = re.search(r"severity\W{0,3}(high|medium|low|info)|gravit[ée]\W{0,3}(haut|mid|basse|info)", txt, re.I)
+    closed = bool(re.search(r"\b(closed|cleared|resolved|ended|inactive|fermé|terminé|résolu)\b", txt, re.I))
+    try: when = email.utils.parsedate_to_datetime(msg.get("Date")).astimezone(UTC)
+    except Exception: when = dt.datetime.now(UTC)
+    name = re.sub(r"^(\s*(re|fw|tr)\s*:)+", "", s, flags=re.I).strip()[:120]
+    return {"ts": when.strftime("%Y-%m-%dT%H:%MZ"), "code": code.group(1) if code else "?",
+            "dev": ("PVS-" + dev.group(1)) if dev else "Installation",
+            "sev": SEV.get(next((g for g in sev.groups() if g), "").lower(), "moyenne") if sev else "moyenne",
+            "name": name, "desc": body[:220], "closed": closed}
+
+
 M = imaplib.IMAP4_SSL(HOST)
 M.login(USER, PWD)
 M.select("INBOX")
 _, ids = M.search(None, "ALL")
-recs, done, links = {}, [], []
+recs, done, links, alarms = {}, [], [], []
 for i in ids[0].split():
     _, d = M.fetch(i, "(RFC822)")
     msg = email.message_from_bytes(d[0][1])
@@ -91,39 +129,73 @@ for i in ids[0].split():
     for name, data in attachments(msg):
         txt = data.decode("utf-8-sig", errors="replace")
         r = parse_csv(txt); found = True
-        print(f"Pièce jointe {name} : {len(r)} quarts d'heure")
+        print(f"Rapport {name} : {len(r)} quarts d'heure")
         for u, v in r.items(): recs.setdefault(u, {}).update(v)
-    if found: done.append(i)
-    else:
-        body = " ".join(p.get_payload(decode=True).decode(errors="replace") for p in msg.walk()
-                        if p.get_content_type() in ("text/plain", "text/html") and p.get_payload(decode=True))
+    if found: done.append(i); continue
+    body = text_of(msg)
+    a = parse_alarm(msg, body)
+    if a:
+        alarms.append(a); done.append(i)
+        print(f"Alarme : {a['ts']} {a['dev']} {a['code']} {a['sev']} {'(fin)' if a['closed'] else '(début)'} — {a['name']}")
+        print("   texte :", body[:500])
+    elif re.search(r"aurora|fimer", msg.get("From", "") + subj(msg), re.I):
         links += re.findall(r"https?://[^\s\"'<>]*aurora[^\s\"'<>]*", body)[:3]
-        print("E-mail sans fichier CSV :", msg.get("Subject"))
+        print("E-mail Aurora non reconnu :", subj(msg), "|", body[:500])
+    else:
+        print("E-mail ignoré :", subj(msg))
 
-if not recs:
-    if links: print("Le rapport ne contient qu'un lien (pas de fichier joint) :", links[:3])
+if links: print("Liens trouvés (rapport sans pièce jointe ?) :", links[:3])
+if not recs and not alarms:
     print("Aucune donnée nouvelle."); M.logout(); sys.exit(0)
 
-# --- conversion vers le format du relevé Aurora attendu par aurora_apply.py
-now = dt.datetime.now(TZ)
-p15, days = [], {}
-for u in sorted(recs):
-    r = recs[u]
-    kw = r.get("p") if r.get("p") is not None else (r["e"] * 4 if r.get("e") is not None else None)
-    kwh = r.get("e") if r.get("e") is not None else (r["p"] / 4 if r.get("p") is not None else None)
-    s = dt.datetime.fromtimestamp(u, UTC).strftime("%Y-%m-%dT%H:%M")
-    if kw is not None and kw > 0.04: p15.append([s, round(kw, 1)])
-    loc = dt.datetime.fromtimestamp(u, TZ).date()
-    if kwh is not None: days.setdefault(loc, []).append(kwh)
-daily = []
-for d, v in sorted(days.items()):
-    if d < now.date() or len(v) >= 90:          # jour complet seulement
-        midnight = dt.datetime.combine(d, dt.time(), TZ).astimezone(UTC).strftime("%Y-%m-%dT%H:%M")
-        daily.append([midnight, round(sum(v), 1)])
-o = {"at": now.astimezone(UTC).isoformat()[:16], "daily": daily, "inv": {}, "p15": p15}
-open("/tmp/aurora_mail_dump.txt", "w").write("AURORA_DUMP" + json.dumps(o) + "END")
-print(f"{len(p15)} quarts d'heure produisant, jours complets : {[(str(d), round(sum(v), 1)) for d, v in sorted(days.items()) if d < now.date() or len(v) >= 90]}")
-subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "aurora_apply.py"), "/tmp/aurora_mail_dump.txt"], check=True)
+if recs:
+    now = dt.datetime.now(TZ)
+    p15, days = [], {}
+    for u in sorted(recs):
+        r = recs[u]
+        kw = r.get("p") if r.get("p") is not None else (r["e"] * 4 if r.get("e") is not None else None)
+        kwh = r.get("e") if r.get("e") is not None else (r["p"] / 4 if r.get("p") is not None else None)
+        s = dt.datetime.fromtimestamp(u, UTC).strftime("%Y-%m-%dT%H:%M")
+        if kw is not None and kw > 0.04: p15.append([s, round(kw, 1)])
+        loc = dt.datetime.fromtimestamp(u, TZ).date()
+        if kwh is not None: days.setdefault(loc, []).append(kwh)
+    daily = []
+    for d, v in sorted(days.items()):
+        if d < now.date() or len(v) >= 90:          # jour complet seulement
+            midnight = dt.datetime.combine(d, dt.time(), TZ).astimezone(UTC).strftime("%Y-%m-%dT%H:%M")
+            daily.append([midnight, round(sum(v), 1)])
+    o = {"at": now.astimezone(UTC).isoformat()[:16], "daily": daily, "inv": {}, "p15": p15}
+    open("/tmp/aurora_mail_dump.txt", "w").write("AURORA_DUMP" + json.dumps(o) + "END")
+    print(f"{len(p15)} quarts d'heure produisant, jours complets : {[(str(d), round(sum(v), 1)) for d, v in sorted(days.items()) if d < now.date() or len(v) >= 90]}")
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "aurora_apply.py"), "/tmp/aurora_mail_dump.txt"], check=True)
+
+# --- alarmes : historique, alarmes en cours, compteurs
+if alarms:
+    D = json.load(open("data/production.json"))
+    E = D.setdefault("events", {})
+    rec, act = E.setdefault("recent", []), E.setdefault("activeList", [])
+    seen = {(r[0], r[3], r[2]) for r in rec}
+    for a in sorted(alarms, key=lambda a: a["ts"]):
+        key = (a["dev"], a["code"])
+        if a["closed"]:
+            for x in [x for x in act if (x.get("dev"), x.get("code")) == key]:
+                act.remove(x)
+                mins = int((dt.datetime.strptime(a["ts"], "%Y-%m-%dT%H:%MZ") - dt.datetime.strptime(x["start"], "%Y-%m-%dT%H:%MZ")).total_seconds() // 60)
+                for r in rec:
+                    if (r[0], r[3], r[2]) == (x["start"], a["code"], a["dev"]): r[1] = max(mins, 0)
+            continue
+        if (a["ts"], a["code"], a["dev"]) in seen: continue
+        seen.add((a["ts"], a["code"], a["dev"]))
+        rec.insert(0, [a["ts"], None, a["dev"], a["code"], a["sev"]])
+        if not any((x.get("dev"), x.get("code")) == key for x in act):
+            act.append({"id": a["ts"] + a["code"], "start": a["ts"], "dev": a["dev"], "code": a["code"],
+                        "name": a["name"], "sev": a["sev"], "desc": a["desc"]})
+        E["total"] = E.get("total", 0) + 1
+        m = a["ts"][:7]; bm = E.setdefault("byMonth", {}); bm[m] = bm.get(m, 0) + 1
+    rec.sort(key=lambda r: r[0], reverse=True); del rec[40:]
+    E["active"] = len(act); E["activeAt"] = dt.datetime.now(UTC).strftime("%Y-%m-%dT%H:%MZ")
+    json.dump(D, open("data/production.json", "w"), ensure_ascii=False, separators=(",", ":"))
+    print(f"Alarmes enregistrées : {len(alarms)} | en cours : {len(act)}")
 
 # --- e-mails traités : supprimés de la boîte du robot
 for i in done: M.store(i, "+FLAGS", "\\Deleted")

@@ -1,8 +1,7 @@
 name: PolyImmo (rapport Aurora par e-mail)
 on:
   schedule:
-    - cron: "17 5 * * *"    # chaque matin (~06:17 en Suisse)
-    - cron: "47 11 * * *"   # repasse de midi si le rapport arrive tard
+    - cron: "17 * * * *"    # chaque heure : rapport du jour + alarmes reçues
   workflow_dispatch:
 permissions:
   contents: write

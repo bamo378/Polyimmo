@@ -398,7 +398,7 @@ function renderWeather(){
     const names = Object.fromEntries(e.byCode.map(x => [x[0], x[2]]));
     el('evCodes').innerHTML = '<thead><tr><th class="l">Type d\'événement</th><th class="l">Onduleur</th><th>Gravité</th><th>Nombre</th></tr></thead><tbody>' + e.byCode.map(([c,dev,nm,sev,n]) => `<tr><td class="l">${esc(nm)} (${esc(c)})</td><td class="l">${esc(dev)}</td><td><span class="sev">${esc(sev)}</span></td><td>${n}</td></tr>`).join('') + '</tbody>';
     el('evRecent').innerHTML = '<thead><tr><th class="l">Date</th><th class="l">Événement</th><th class="l">Onduleur</th><th>Durée</th></tr></thead><tbody>' + e.recent.map(([ts, mins, dev, code]) => { const d = new Date(ts);
-      return `<tr><td class="l">${d.toLocaleDateString('fr-CH',{day:'numeric',month:'short'})} ${d.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'})}</td><td class="l">${esc(names[code]||code)}</td><td class="l">${esc(dev)}</td><td>${mins < 1 ? '< 1 min' : mins < 60 ? mins + ' min' : nf1.format(mins/60) + ' h'}</td></tr>`; }).join('') + '</tbody>';
+      return `<tr><td class="l">${d.toLocaleDateString('fr-CH',{day:'numeric',month:'short'})} ${d.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'})}</td><td class="l">${esc(names[code]||code)}</td><td class="l">${esc(dev)}</td><td>${mins == null ? 'en cours' : mins < 1 ? '< 1 min' : mins < 60 ? mins + ' min' : nf1.format(mins/60) + ' h'}</td></tr>`; }).join('') + '</tbody>';
   }
 }
 
