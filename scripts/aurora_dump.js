@@ -2,7 +2,7 @@
 // Résultat : texte compact AURORA_DUMP{...}END placé dans la page, à lire avec get_page_text.
 (async () => {
   const g = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
-  const now = new Date(), E = now.toISOString(), S = new Date(now - 10 * 864e5).toISOString().slice(0, 10) + 'T00:00:00.000Z', S15 = new Date(now - 8 * 864e5).toISOString().slice(0, 10) + 'T00:00:00.000Z';
+  const now = new Date(), E = now.toISOString(), S = new Date(now - 40 * 864e5).toISOString().slice(0, 10) + 'T00:00:00.000Z', S15 = new Date(now - 8 * 864e5).toISOString().slice(0, 10) + 'T00:00:00.000Z';
   const day = async base => (await g(base + '/energy/GenerationEnergy?agp=Day&afx=Delta&sdt=' + S + '&edt=' + E)).map(x => [x.start.slice(0, 16), x.value == null ? null : Math.round(x.value * 10) / 10]);
   const o = {at: E};
   o.daily = await day('/telemetry/v1/plants/35546755');
