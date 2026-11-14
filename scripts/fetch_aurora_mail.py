@@ -139,8 +139,26 @@ for i in ids[0].split():
         print(f"Alarme : {a['ts']} {a['dev']} {a['code']} {a['sev']} {'(fin)' if a['closed'] else '(début)'} — {a['name']}")
         print("   texte :", body[:500])
     elif re.search(r"aurora|fimer", msg.get("From", "") + subj(msg), re.I):
-        links += re.findall(r"https?://[^\s\"'<>]*aurora[^\s\"'<>]*", body)[:3]
-        print("E-mail Aurora non reconnu :", subj(msg), "|", body[:500])
+        dl = re.findall(r"https?://www\.auroravision\.net/report/download/[\w/]+", body)
+        got = False
+        for u in dl[:1]:                      # lien de téléchargement : essai SANS identifiant
+            try:
+                import urllib.request
+                with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "PolyImmo-robot"}), timeout=30) as resp:
+                    ct, data = resp.headers.get("Content-Type", ""), resp.read()
+                print("Lien de rapport :", resp.status, ct, len(data), "octets")
+                if data[:2] == b"PK":
+                    with zipfile.ZipFile(io.BytesIO(data)) as z:
+                        data = b"".join(z.read(n) for n in z.namelist() if n.lower().endswith(".csv"))
+                txt = data.decode("utf-8-sig", errors="replace")
+                if "<html" not in txt[:500].lower():
+                    r = parse_csv(txt); got = bool(r)
+                    print(f"Rapport téléchargé : {len(r)} quarts d'heure")
+                    for k, v in r.items(): recs.setdefault(k, {}).update(v)
+                else: print("Le lien demande une connexion à Aurora (page de connexion reçue).")
+            except Exception as e: print("Lien de rapport inaccessible :", e)
+        if got or dl: done.append(i)
+        else: print("E-mail Aurora non reconnu :", subj(msg), "|", body[:500])
     elif re.search(r"undeliver|delivery status|returned to sender|mail delivery|non distribu", subj(msg), re.I):
         codes = re.findall(r"\b[45]\d\d[ -][45]\.\d{1,3}\.\d{1,3}[^.]{0,160}", body)   # motif du refus
         red = lambda t: re.sub(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", r"…@\1", t)
@@ -157,7 +175,9 @@ for i in ids[0].split():
 
 if links: print("Liens trouvés (rapport sans pièce jointe ?) :", links[:3])
 if not recs and not alarms:
-    print("Aucune donnée nouvelle."); M.logout(); sys.exit(0)
+    for i in done: M.store(i, "+FLAGS", "\\Deleted")
+    M.expunge(); M.logout()
+    print("Aucune donnée nouvelle." + (f" ({len(done)} e-mail(s) traité(s) supprimé(s))" if done else "")); sys.exit(0)
 
 if recs:
     now = dt.datetime.now(TZ)
